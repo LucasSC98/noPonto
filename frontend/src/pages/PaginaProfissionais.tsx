@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BadgeAtivo } from '../components/BadgeAtivo';
 import { BarraPainel } from '../components/BarraPainel';
+import { MenuAcoes } from '../components/MenuAcoes';
 import {
   atualizarProfissional,
   atualizarStatusProfissional,
@@ -332,13 +333,6 @@ export function PaginaProfissionais() {
                         <button
                           type="button"
                           className={estilos.botaoAcaoPositivo}
-                          onClick={() => iniciarEdicao(profissional)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          className={estilos.botaoAcaoPositivo}
                           onClick={() => navegar(`/profissionais/${profissional.id}/disponibilidade`)}
                         >
                           Horários
@@ -350,14 +344,21 @@ export function PaginaProfissionais() {
                         >
                           {linkCopiadoId === profissional.id ? 'Link copiado!' : 'Copiar link'}
                         </button>
-                        <button
-                          type="button"
-                          className={profissional.ativo ? estilos.botaoAcaoPerigo : estilos.botaoAcaoPositivo}
-                          disabled={salvando}
-                          onClick={() => alterarStatus(profissional, !profissional.ativo)}
-                        >
-                          {profissional.ativo ? 'Desativar' : 'Reativar'}
-                        </button>
+                        <MenuAcoes
+                          rotuloAcessivel={`Mais ações para ${profissional.nome}`}
+                          itens={[
+                            {
+                              rotulo: 'Editar',
+                              aoClicar: () => iniciarEdicao(profissional),
+                            },
+                            {
+                              rotulo: profissional.ativo ? 'Desativar' : 'Reativar',
+                              aoClicar: () => alterarStatus(profissional, !profissional.ativo),
+                              perigo: profissional.ativo,
+                              desabilitado: salvando,
+                            },
+                          ]}
+                        />
                       </div>
                       {!profissional.temDisponibilidade && (
                         <p className={estilos.avisoDiscreto}>
