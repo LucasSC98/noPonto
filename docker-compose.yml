@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: noponto-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: noponto_db
+      POSTGRES_USER: noponto
+      POSTGRES_PASSWORD: noponto
+      TZ: UTC
+    ports:
+      - "5432:5432"
+    volumes:
+      - noponto_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U noponto -d noponto_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  noponto_postgres_data:
