@@ -5,6 +5,7 @@ import me.lucascustodio.noponto.domain.ServicoItem;
 import me.lucascustodio.noponto.dto.AtualizarServicoItemRequest;
 import me.lucascustodio.noponto.dto.CriarServicoItemRequest;
 import me.lucascustodio.noponto.dto.ServicoItemResponse;
+import me.lucascustodio.noponto.dto.ServicoVinculadoResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.repository.ContagemPorProfissional;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +46,18 @@ public class GestaoServicoItemService {
         }
         return servicoItemRepository.contarAtivosPorProfissional(tenantId, profissionalIds).stream()
                 .collect(Collectors.toMap(ContagemPorProfissional::profissionalId, ContagemPorProfissional::total));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<UUID, List<ServicoVinculadoResponse>> listarAtivosPorProfissionais(
+            UUID tenantId, Collection<UUID> profissionalIds) {
+        if (profissionalIds == null || profissionalIds.isEmpty()) {
+            return Map.of();
+        }
+        return servicoItemRepository.buscarAtivosPorProfissionais(tenantId, profissionalIds).stream()
+                .collect(Collectors.groupingBy(
+                        servico -> servico.getProfissional().getId(),
+                        Collectors.mapping(ServicoVinculadoResponse::de, Collectors.toList())));
     }
 
     @Transactional

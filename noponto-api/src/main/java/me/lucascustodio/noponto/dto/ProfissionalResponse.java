@@ -2,6 +2,7 @@ package me.lucascustodio.noponto.dto;
 
 import me.lucascustodio.noponto.domain.Profissional;
 
+import java.util.List;
 import java.util.UUID;
 
 public record ProfissionalResponse(
@@ -11,25 +12,28 @@ public record ProfissionalResponse(
         Boolean ativo,
         boolean temDisponibilidade,
         long quantidadeServicosAtivos,
-        long agendamentosSemana
+        long agendamentosSemana,
+        List<ServicoVinculadoResponse> servicosAtivos
 ) {
 
     public static ProfissionalResponse de(Profissional profissional) {
-        return de(profissional, false, 0L, 0L);
+        return de(profissional, false, 0L, List.of());
     }
 
     public static ProfissionalResponse de(Profissional profissional,
                                           boolean temDisponibilidade,
-                                          long quantidadeServicosAtivos,
-                                          long agendamentosSemana) {
+                                          long agendamentosSemana,
+                                          List<ServicoVinculadoResponse> servicosAtivos) {
+        List<ServicoVinculadoResponse> lista = servicosAtivos == null ? List.of() : List.copyOf(servicosAtivos);
         return new ProfissionalResponse(
                 profissional.getId(),
                 profissional.getNome(),
                 profissional.getEmail(),
                 profissional.getAtivo(),
                 temDisponibilidade,
-                quantidadeServicosAtivos,
-                agendamentosSemana
+                lista.size(),
+                agendamentosSemana,
+                lista
         );
     }
 }

@@ -1,3 +1,9 @@
+export interface ServicoVinculadoResponse {
+  id: string;
+  nome: string;
+  duracaoMinutos: number;
+}
+
 export interface ProfissionalResponse {
   id: string;
   nome: string;
@@ -6,6 +12,7 @@ export interface ProfissionalResponse {
   temDisponibilidade: boolean;
   quantidadeServicosAtivos: number;
   agendamentosSemana: number;
+  servicosAtivos: ServicoVinculadoResponse[];
 }
 
 export interface CriarProfissionalRequest {

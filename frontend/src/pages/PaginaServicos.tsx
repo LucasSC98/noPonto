@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { BadgeAtivo } from '../components/BadgeAtivo';
+import { BarraPainel } from '../components/BarraPainel';
 import {
   atualizarServico,
   atualizarStatusServico,
@@ -16,9 +17,11 @@ import estilos from './PaginaDashboard.module.css';
 
 export function PaginaServicos() {
   const navegar = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const profissionalIdUrl = searchParams.get('profissionalId') ?? '';
 
   const [profissionais, setProfissionais] = useState<ProfissionalResponse[]>([]);
-  const [profissionalSelecionado, setProfissionalSelecionado] = useState<string>('');
+  const [profissionalSelecionado, setProfissionalSelecionado] = useState<string>(profissionalIdUrl);
 
   const [servicos, setServicos] = useState<ServicoItemResponse[]>([]);
   const [carregando, setCarregando] = useState(false);
@@ -148,140 +151,142 @@ export function PaginaServicos() {
     }
   }
 
+  const profissionalAtual = profissionais.find((item) => item.id === profissionalSelecionado);
+
   return (
     <div className={estilos.pagina}>
-      <header className={estilos.barraSuperior}>
-        <div className={estilos.barraConteudo}>
-          <div className={estilos.identidade}>
-            <span className={estilos.marca}>NoPonto</span>
-            <span className={estilos.separador}>/</span>
-            <span className={estilos.tituloPagina}>Serviços</span>
-          </div>
-          <div className={estilos.acoesBarra}>
-            <button type="button" className={estilos.botaoSecundario} onClick={() => navegar('/dashboard')}>
-              Voltar ao dashboard
-            </button>
-          </div>
-        </div>
-      </header>
+      <BarraPainel atual="/servicos" />
 
       <main className={estilos.conteudo}>
-        <section className={estilos.painel}>
-          <h1 className={estilos.tituloPainel}>Gerenciar serviços</h1>
+        <div className={estilos.introducao}>
+          <div>
+            <h1 className={estilos.tituloGrande}>Serviços</h1>
+            <p className={estilos.descricao}>
+              Cada serviço tem uma duração. Ela define o tamanho dos horários oferecidos na agenda pública.
+            </p>
+          </div>
+          <span className={estilos.contador}>
+            {servicos.length} {servicos.length === 1 ? 'serviço' : 'serviços'}
+          </span>
+        </div>
 
-          <label>
-            Profissional
-            <select
-              value={profissionalSelecionado}
-              onChange={(e) => {
-                setProfissionalSelecionado(e.target.value);
-                limparFormulario();
-              }}
-              style={{ width: '100%', maxWidth: 400, padding: '0.5rem', marginTop: 4 }}
-            >
-              <option value="">Selecione...</option>
-              {profissionais.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nome} {p.ativo ? '' : '(inativo)'}
-                </option>
-              ))}
-            </select>
-          </label>
+        {erro && <div className={estilos.alertaErro}>{erro}</div>}
 
-          {profissionalSelecionado && (
-            <form onSubmit={aoEnviar} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 480, marginTop: '1.5rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.1rem' }}>
-                {editandoId ? 'Editar serviço' : 'Novo serviço'}
-              </h2>
-
-              <label>
-                Nome do serviço
-                <input
-                  type="text"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  required
-                  style={{ width: '100%', padding: '0.5rem', marginTop: 4 }}
-                />
-              </label>
-
-              <label>
-                Duração (minutos)
-                <input
-                  type="number"
-                  min={5}
-                  step={5}
-                  value={duracaoMinutos}
-                  onChange={(e) => setDuracaoMinutos(Number(e.target.value))}
-                  required
-                  style={{ width: '100%', padding: '0.5rem', marginTop: 4 }}
-                />
-              </label>
-
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" disabled={salvando} className={estilos.botaoSecundario}>
-                  {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Cadastrar'}
-                </button>
-                {editandoId && (
-                  <button type="button" onClick={limparFormulario} className={estilos.botaoSecundario}>
-                    Cancelar
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
-
-          {erro && <div className={estilos.alertaErro} style={{ marginTop: '1rem' }}>{erro}</div>}
-        </section>
-
-        {profissionalSelecionado && (
+        <div className={estilos.gradeCadastro}>
           <section className={estilos.painel}>
-            <h2 className={estilos.tituloPainel}>Serviços do profissional</h2>
+            <h2 className={estilos.tituloPainel}>{editandoId ? 'Editar serviço' : 'Novo serviço'}</h2>
+            <label className={estilos.campo}>
+              <span className={estilos.rotulo}>Profissional</span>
+              <select
+                value={profissionalSelecionado}
+                onChange={(evento) => {
+                  const novoId = evento.target.value;
+                  setProfissionalSelecionado(novoId);
+                  if (novoId) {
+                    setSearchParams({ profissionalId: novoId }, { replace: true });
+                  } else {
+                    setSearchParams({}, { replace: true });
+                  }
+                  limparFormulario();
+                }}
+                className={estilos.entrada}
+              >
+                <option value="">Selecione...</option>
+                {profissionais.map((profissional) => (
+                  <option key={profissional.id} value={profissional.id}>
+                    {profissional.nome}
+                    {profissional.ativo ? '' : ' (inativo)'}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-            {carregando ? (
+            {profissionalSelecionado && (
+              <form className={estilos.formulario} onSubmit={aoEnviar}>
+                <label className={estilos.campo}>
+                  <span className={estilos.rotulo}>Nome do serviço</span>
+                  <input
+                    type="text"
+                    value={nome}
+                    onChange={(evento) => setNome(evento.target.value)}
+                    required
+                    placeholder="Consulta, retorno, avaliação..."
+                    className={estilos.entrada}
+                  />
+                </label>
+                <label className={estilos.campo}>
+                  <span className={estilos.rotulo}>Duração (minutos)</span>
+                  <input
+                    type="number"
+                    min={5}
+                    step={5}
+                    value={duracaoMinutos}
+                    onChange={(evento) => setDuracaoMinutos(Number(evento.target.value))}
+                    required
+                    className={estilos.entrada}
+                  />
+                </label>
+                <div className={estilos.linhaBotoes}>
+                  <button type="submit" disabled={salvando} className={estilos.botaoPrimario}>
+                    {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Cadastrar'}
+                  </button>
+                  {editandoId && (
+                    <button type="button" onClick={limparFormulario} className={estilos.botaoSecundario}>
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              </form>
+            )}
+          </section>
+
+          <section className={estilos.painel}>
+            <h2 className={estilos.tituloPainel}>
+              {profissionalAtual ? `Serviços de ${profissionalAtual.nome}` : 'Serviços'}
+            </h2>
+            {!profissionalSelecionado ? (
+              <p className={estilos.estadoVazio}>Selecione um profissional para ver os serviços.</p>
+            ) : carregando ? (
               <p className={estilos.estadoVazio}>Carregando...</p>
             ) : servicos.length === 0 ? (
               <p className={estilos.estadoVazio}>Nenhum serviço cadastrado para este profissional.</p>
             ) : (
-              <div className={estilos.tabelaWrapper}>
-                <table className={estilos.tabela}>
-                  <thead>
-                    <tr>
-                      <th>Nome</th>
-                      <th>Duração</th>
-                      <th>Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {servicos.map((s) => (
-                      <tr key={s.id}>
-                        <td>{s.nome}</td>
-                        <td>{s.duracaoMinutos} min</td>
-                        <td><BadgeAtivo ativo={s.ativo} /></td>
-                        <td>
-                          <div className={estilos.grupoAcoes}>
-                            <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(s)}>
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              className={s.ativo ? estilos.botaoAcaoPerigo : estilos.botaoAcaoPositivo}
-                              disabled={salvando}
-                              onClick={() => alterarStatus(s, !s.ativo)}
-                            >
-                              {s.ativo ? 'Desativar' : 'Reativar'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className={estilos.listaCartoes}>
+                {servicos.map((servico) => (
+                  <article key={servico.id} className={estilos.cartaoItem}>
+                    <span className={`${estilos.avatar} ${estilos.avatarNumero}`} aria-hidden="true">
+                      {servico.duracaoMinutos}
+                    </span>
+                    <div className={estilos.cartaoCorpo}>
+                      <div className={estilos.cartaoTopo}>
+                        <div>
+                          <strong className={estilos.nomeItem}>{servico.nome}</strong>
+                          <span className={estilos.subItem}>
+                            <span className={estilos.pilula}>{servico.duracaoMinutos} min</span>
+                          </span>
+                        </div>
+                        <BadgeAtivo ativo={servico.ativo} />
+                      </div>
+                      <div className={estilos.grupoAcoes}>
+                        <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(servico)}>
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className={servico.ativo ? estilos.botaoAcaoPerigo : estilos.botaoAcaoPositivo}
+                          disabled={salvando}
+                          onClick={() => alterarStatus(servico, !servico.ativo)}
+                        >
+                          {servico.ativo ? 'Desativar' : 'Reativar'}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
               </div>
             )}
           </section>
-        )}
+        </div>
       </main>
     </div>
   );

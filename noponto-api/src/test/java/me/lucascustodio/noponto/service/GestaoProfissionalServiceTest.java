@@ -2,6 +2,7 @@ package me.lucascustodio.noponto.service;
 
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.dto.ProfissionalResponse;
+import me.lucascustodio.noponto.dto.ServicoVinculadoResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +52,7 @@ class GestaoProfissionalServiceTest {
         when(profissionalRepository.save(any(Profissional.class))).thenAnswer(chamada -> chamada.getArgument(0));
         when(regraDisponibilidadeService.buscarProfissionaisComDisponibilidade(eq(TENANT_ID), anyCollection()))
                 .thenReturn(Set.of());
-        when(servicoItemService.contarAtivosPorProfissional(eq(TENANT_ID), anyCollection()))
+        when(servicoItemService.listarAtivosPorProfissionais(eq(TENANT_ID), anyCollection()))
                 .thenReturn(Map.of());
         when(agendamentoConsultaService.contarAgendamentosSemanaPorProfissional(eq(TENANT_ID), anyCollection()))
                 .thenReturn(Map.of());
@@ -63,12 +64,16 @@ class GestaoProfissionalServiceTest {
         Profissional semDados = profissional(UUID.randomUUID(), "Dra. Maria");
         PageRequest pageable = PageRequest.of(0, 20);
         List<UUID> ids = List.of(comDados.getId(), semDados.getId());
+        List<ServicoVinculadoResponse> servicos = List.of(
+                new ServicoVinculadoResponse(UUID.randomUUID(), "Consulta Geral", 30),
+                new ServicoVinculadoResponse(UUID.randomUUID(), "Retorno", 15),
+                new ServicoVinculadoResponse(UUID.randomUUID(), "Avaliação", 45));
         when(profissionalRepository.findAllByTenantId(TENANT_ID, pageable))
                 .thenReturn(new PageImpl<>(List.of(comDados, semDados)));
         when(regraDisponibilidadeService.buscarProfissionaisComDisponibilidade(TENANT_ID, ids))
                 .thenReturn(Set.of(comDados.getId()));
-        when(servicoItemService.contarAtivosPorProfissional(TENANT_ID, ids))
-                .thenReturn(Map.of(comDados.getId(), 3L));
+        when(servicoItemService.listarAtivosPorProfissionais(TENANT_ID, ids))
+                .thenReturn(Map.of(comDados.getId(), servicos));
         when(agendamentoConsultaService.contarAgendamentosSemanaPorProfissional(TENANT_ID, ids))
                 .thenReturn(Map.of(comDados.getId(), 5L));
 
@@ -78,9 +83,11 @@ class GestaoProfissionalServiceTest {
         ProfissionalResponse segundo = resultado.getContent().get(1);
         assertThat(primeiro.temDisponibilidade()).isTrue();
         assertThat(primeiro.quantidadeServicosAtivos()).isEqualTo(3L);
+        assertThat(primeiro.servicosAtivos()).hasSize(3);
         assertThat(primeiro.agendamentosSemana()).isEqualTo(5L);
         assertThat(segundo.temDisponibilidade()).isFalse();
         assertThat(segundo.quantidadeServicosAtivos()).isZero();
+        assertThat(segundo.servicosAtivos()).isEmpty();
         assertThat(segundo.agendamentosSemana()).isZero();
     }
 

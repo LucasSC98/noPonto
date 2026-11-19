@@ -232,6 +232,30 @@ export function PaginaProfissionais() {
                           <BadgeAtivo ativo={profissional.ativo} />
                         </div>
                       </div>
+                      <div className={estilos.listaChips}>
+                        {profissional.servicosAtivos.slice(0, 3).map((servico) => (
+                          <span key={servico.id} className={estilos.pilula}>
+                            {servico.nome} · {servico.duracaoMinutos}min
+                          </span>
+                        ))}
+                        {profissional.servicosAtivos.length > 3 && (
+                          <span
+                            className={estilos.chipExtra}
+                            title={profissional.servicosAtivos
+                              .map((servico) => `${servico.nome} · ${servico.duracaoMinutos}min`)
+                              .join('\n')}
+                          >
+                            +{profissional.servicosAtivos.length - 3}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className={estilos.linkGerenciarServicos}
+                          onClick={() => navegar(`/servicos?profissionalId=${profissional.id}`)}
+                        >
+                          Gerenciar serviços
+                        </button>
+                      </div>
                       <div className={estilos.grupoAcoes}>
                         <button
                           type="button"

@@ -86,6 +86,9 @@ class ResumoProfissionalIntegracaoTest {
         assertThat(resposta.id()).isEqualTo(profA.getId());
         assertThat(resposta.quantidadeServicosAtivos()).isEqualTo(2L);
         assertThat(resposta.agendamentosSemana()).isEqualTo(2L);
+        assertThat(resposta.servicosAtivos())
+                .extracting("nome")
+                .containsExactly("Consulta", "Retorno");
     }
 
     private Tenant criarTenant(String subdominio) {

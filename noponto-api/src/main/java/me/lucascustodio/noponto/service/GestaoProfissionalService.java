@@ -4,6 +4,7 @@ import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.dto.AtualizarProfissionalRequest;
 import me.lucascustodio.noponto.dto.CriarProfissionalRequest;
 import me.lucascustodio.noponto.dto.ProfissionalResponse;
+import me.lucascustodio.noponto.dto.ServicoVinculadoResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import org.springframework.data.domain.Page;
@@ -44,15 +45,16 @@ public class GestaoProfissionalService {
 
         Set<UUID> comDisponibilidade = regraDisponibilidadeService
                 .buscarProfissionaisComDisponibilidade(tenantId, ids);
-        Map<UUID, Long> servicosAtivos = servicoItemService.contarAtivosPorProfissional(tenantId, ids);
+        Map<UUID, List<ServicoVinculadoResponse>> servicosPorProfissional = servicoItemService
+                .listarAtivosPorProfissionais(tenantId, ids);
         Map<UUID, Long> agendamentosSemana = agendamentoConsultaService
                 .contarAgendamentosSemanaPorProfissional(tenantId, ids);
 
         return pagina.map(profissional -> ProfissionalResponse.de(
                 profissional,
                 comDisponibilidade.contains(profissional.getId()),
-                servicosAtivos.getOrDefault(profissional.getId(), 0L),
-                agendamentosSemana.getOrDefault(profissional.getId(), 0L)
+                agendamentosSemana.getOrDefault(profissional.getId(), 0L),
+                servicosPorProfissional.getOrDefault(profissional.getId(), List.of())
         ));
     }
 
@@ -64,7 +66,7 @@ public class GestaoProfissionalService {
         profissional.setEmail(requisicao.email());
         profissional.setAtivo(true);
 
-        return ProfissionalResponse.de(profissionalRepository.save(profissional), false, 0L, 0L);
+        return ProfissionalResponse.de(profissionalRepository.save(profissional), false, 0L, List.of());
     }
 
     @Transactional
@@ -93,12 +95,13 @@ public class GestaoProfissionalService {
         boolean temDisponibilidade = regraDisponibilidadeService
                 .buscarProfissionaisComDisponibilidade(tenantId, ids)
                 .contains(profissional.getId());
-        long servicosAtivos = servicoItemService.contarAtivosPorProfissional(tenantId, ids)
-                .getOrDefault(profissional.getId(), 0L);
+        List<ServicoVinculadoResponse> servicos = servicoItemService
+                .listarAtivosPorProfissionais(tenantId, ids)
+                .getOrDefault(profissional.getId(), List.of());
         long agendamentosSemana = agendamentoConsultaService
                 .contarAgendamentosSemanaPorProfissional(tenantId, ids)
                 .getOrDefault(profissional.getId(), 0L);
 
-        return ProfissionalResponse.de(profissional, temDisponibilidade, servicosAtivos, agendamentosSemana);
+        return ProfissionalResponse.de(profissional, temDisponibilidade, agendamentosSemana, servicos);
     }
 }
