@@ -1,10 +1,11 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   atualizarProfissional,
   criarProfissional,
   listarProfissionais,
+  obterTenantAtual,
 } from '../services/gestaoService';
 import { extrairMensagemErro } from '../services/api';
 import { removerToken } from '../services/authService';
@@ -23,13 +24,16 @@ export function PaginaProfissionais() {
   const [email, setEmail] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [ativo, setAtivo] = useState(true);
+  const [subdominioTenant, setSubdominioTenant] = useState<string | null>(null);
+  const [linkCopiadoId, setLinkCopiadoId] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
     setErro(null);
     try {
-      const pagina = await listarProfissionais(0, 50);
+      const [pagina, tenant] = await Promise.all([listarProfissionais(0, 50), obterTenantAtual()]);
       setProfissionais(pagina.content);
+      setSubdominioTenant(tenant.subdominio);
     } catch (falha) {
       if (axios.isAxiosError(falha) && falha.response?.status === 401) {
         removerToken();
@@ -45,6 +49,24 @@ export function PaginaProfissionais() {
   useEffect(() => {
     carregar();
   }, [carregar]);
+
+  async function copiarLinkAgendamento(profissionalId: string) {
+    if (!subdominioTenant) {
+      setErro('Não foi possível identificar o estabelecimento para montar o link.');
+      return;
+    }
+
+    const url = `${window.location.origin}/agendar/${profissionalId}?tenant=${encodeURIComponent(subdominioTenant)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopiadoId(profissionalId);
+      window.setTimeout(() => {
+        setLinkCopiadoId((atual) => (atual === profissionalId ? null : atual));
+      }, 2000);
+    } catch {
+      setErro('Não foi possível copiar o link de agendamento.');
+    }
+  }
 
   function limparFormulario() {
     setNome('');
@@ -189,6 +211,13 @@ export function PaginaProfissionais() {
                             onClick={() => navegar(`/profissionais/${p.id}/disponibilidade`)}
                           >
                             Horários
+                          </button>
+                          <button
+                            type="button"
+                            className={estilos.botaoAcaoPositivo}
+                            onClick={() => copiarLinkAgendamento(p.id)}
+                          >
+                            {linkCopiadoId === p.id ? 'Link copiado!' : 'Copiar link de agendamento'}
                           </button>
                         </div>
                       </td>

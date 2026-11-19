@@ -59,6 +59,10 @@ export interface AtualizarRegraDisponibilidadeRequest extends SalvarRegraDisponi
   ativo: boolean;
 }
 
+export interface TenantAtualResponse {
+  subdominio: string;
+}
+
 export interface Pagina<T> {
   content: T[];
   totalElements: number;

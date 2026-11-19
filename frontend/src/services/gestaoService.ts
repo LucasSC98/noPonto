@@ -9,7 +9,13 @@ import type {
   RegraDisponibilidadeResponse,
   SalvarRegraDisponibilidadeRequest,
   ServicoItemResponse,
+  TenantAtualResponse,
 } from '../types/gestao';
+
+export async function obterTenantAtual(): Promise<TenantAtualResponse> {
+  const resposta = await api.get<TenantAtualResponse>('/tenants/current');
+  return resposta.data;
+}
 
 export async function listarProfissionais(page = 0, size = 20): Promise<Pagina<ProfissionalResponse>> {
   const resposta = await api.get<Pagina<ProfissionalResponse>>('/profissionais', {

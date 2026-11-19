@@ -7,7 +7,7 @@ import {
   buscarSlotsDisponiveis,
   criarAgendamentoPublico,
 } from '../services/agendamentoService';
-import { extrairMensagemErro } from '../services/api';
+import { extrairMensagemErro, TENANT_PUBLICO_PADRAO } from '../services/api';
 import {
   dataHojeIsoLocal,
   dataNoPassado,
@@ -32,7 +32,8 @@ export function PaginaAgendamentoPublico() {
   const [searchParams] = useSearchParams();
 
   const servicoInicial = searchParams.get('servicoId') ?? '';
-  const subdominioTenant = searchParams.get('tenant') ?? undefined;
+  const tenantNaUrl = searchParams.get('tenant')?.trim();
+  const subdominioTenant = tenantNaUrl ? tenantNaUrl : TENANT_PUBLICO_PADRAO;
   const hojeIso = dataHojeIsoLocal();
 
   const [servicos, setServicos] = useState<ServicoItemResponse[]>([]);
