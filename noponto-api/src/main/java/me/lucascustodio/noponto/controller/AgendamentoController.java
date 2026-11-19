@@ -68,7 +68,7 @@ public class AgendamentoController {
     @ResponseStatus(HttpStatus.CREATED)
     public AgendamentoResponse criar(@Valid @RequestBody CriarAgendamentoRequest requisicao,
                                      HttpServletRequest request) {
-        UUID tenantId = resolvedorTenantPublico.resolver(request);
+        UUID tenantId = resolvedorTenantPublico.resolver(request, requisicao.tenant());
         return agendamentoService.criar(requisicao, tenantId);
     }
 

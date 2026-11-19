@@ -6,9 +6,9 @@ import type {
   StatusAgendamento,
 } from '../types/dominio';
 
-function cabecalhosTenantPublico(subdominio?: string): Record<string, string> {
-  const tenant = subdominio?.trim() || import.meta.env.VITE_TENANT_SUBDOMINIO;
-  return tenant ? { 'X-Tenant-Subdominio': tenant } : {};
+function parametrosTenantPublico(subdominio?: string): Record<string, string> {
+  const tenant = subdominio?.trim();
+  return tenant ? { tenant } : {};
 }
 
 export async function buscarServicosProfissional(
@@ -18,7 +18,7 @@ export async function buscarServicosProfissional(
   const resposta = await api.get<ServicoItemResponse[]>(
     `/public/profissionais/${profissionalId}/servicos`,
     {
-      headers: cabecalhosTenantPublico(subdominioTenant),
+      params: parametrosTenantPublico(subdominioTenant),
     },
   );
   return resposta.data;
@@ -30,14 +30,16 @@ export async function buscarSlotsDisponiveis(
   servicoId?: string,
   subdominioTenant?: string,
 ): Promise<string[]> {
-  const params: Record<string, string> = { data };
+  const params: Record<string, string> = {
+    data,
+    ...parametrosTenantPublico(subdominioTenant),
+  };
   if (servicoId && servicoId.trim().length > 0) {
     params.servicoId = servicoId.trim();
   }
 
   const resposta = await api.get<string[]>(`/public/profissionais/${profissionalId}/slots`, {
     params,
-    headers: cabecalhosTenantPublico(subdominioTenant),
   });
   return resposta.data;
 }
@@ -47,7 +49,7 @@ export async function criarAgendamentoPublico(
   subdominioTenant?: string,
 ): Promise<AgendamentoResponse> {
   const resposta = await api.post<AgendamentoResponse>('/public/agendamentos', requisicao, {
-    headers: cabecalhosTenantPublico(subdominioTenant),
+    params: parametrosTenantPublico(subdominioTenant),
   });
   return resposta.data;
 }

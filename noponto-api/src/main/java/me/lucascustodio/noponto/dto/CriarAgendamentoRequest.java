@@ -13,5 +13,14 @@ public record CriarAgendamentoRequest(
         @NotNull UUID servicoItemId,
         @NotBlank @Size(max = 150) String nomeCliente,
         @NotBlank @Email @Size(max = 255) String emailCliente,
-        @NotNull OffsetDateTime inicio) {
+        @NotNull OffsetDateTime inicio,
+        String tenant) {
+
+    public CriarAgendamentoRequest(UUID profissionalId,
+                                   UUID servicoItemId,
+                                   String nomeCliente,
+                                   String emailCliente,
+                                   OffsetDateTime inicio) {
+        this(profissionalId, servicoItemId, nomeCliente, emailCliente, inicio, null);
+    }
 }

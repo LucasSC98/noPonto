@@ -10,13 +10,16 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Resolve o tenant das rotas públicas (sem JWT) pelo subdomínio do host: {@code clinica.noponto.com}.
- * Em ambientes sem subdomínio (ex.: localhost) usa o cabeçalho {@code X-Tenant-Subdominio}.
+ * Resolve o tenant das rotas públicas (sem JWT) e popula o {@link TenantContextHolder}
+ * antes de qualquer consulta ao banco.
+ * Ordem de resolução: subdomínio do host ({@code clinica.noponto.com}) → query param {@code tenant}
+ * → cabeçalho {@code X-Tenant-Subdominio} → valor informado no corpo da requisição.
  */
 @Component
 public class ResolvedorTenantPublico {
 
     public static final String CABECALHO_SUBDOMINIO = "X-Tenant-Subdominio";
+    public static final String PARAMETRO_TENANT = "tenant";
 
     private final TenantService tenantService;
     private final String dominioBase;
@@ -28,14 +31,27 @@ public class ResolvedorTenantPublico {
     }
 
     public UUID resolver(HttpServletRequest request) {
+        return resolver(request, null);
+    }
+
+    public UUID resolver(HttpServletRequest request, String tenantNoCorpo) {
         String subdominio = extrairDoHost(request.getServerName());
-        if (subdominio == null) {
+        if (estaVazio(subdominio)) {
+            subdominio = request.getParameter(PARAMETRO_TENANT);
+        }
+        if (estaVazio(subdominio)) {
             subdominio = request.getHeader(CABECALHO_SUBDOMINIO);
         }
-        if (subdominio == null || subdominio.isBlank()) {
+        if (estaVazio(subdominio)) {
+            subdominio = tenantNoCorpo;
+        }
+        if (estaVazio(subdominio)) {
             throw new TenantNaoIdentificadoExcecao();
         }
-        return tenantService.buscarIdPorSubdominio(subdominio.trim());
+
+        UUID tenantId = tenantService.buscarIdPorSubdominio(subdominio.trim());
+        TenantContextHolder.set(tenantId);
+        return tenantId;
     }
 
     private String extrairDoHost(String host) {
@@ -48,5 +64,9 @@ public class ResolvedorTenantPublico {
             return null;
         }
         return hostNormalizado.substring(0, hostNormalizado.length() - sufixo.length());
+    }
+
+    private static boolean estaVazio(String valor) {
+        return valor == null || valor.isBlank();
     }
 }
