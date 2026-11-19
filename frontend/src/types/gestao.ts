@@ -3,6 +3,7 @@ export interface ProfissionalResponse {
   nome: string;
   email: string | null;
   ativo: boolean;
+  temDisponibilidade: boolean;
 }
 
 export interface CriarProfissionalRequest {

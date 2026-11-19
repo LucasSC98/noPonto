@@ -17,8 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.OffsetTime;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -37,6 +39,14 @@ public class GestaoRegraDisponibilidadeService {
     public Page<RegraDisponibilidadeResponse> listarPorProfissional(UUID tenantId, UUID profissionalId, Pageable pageable) {
         return regraDisponibilidadeRepository.findAllByTenantIdAndProfissionalId(tenantId, profissionalId, pageable)
                 .map(RegraDisponibilidadeResponse::de);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<UUID> buscarProfissionaisComDisponibilidade(UUID tenantId, Collection<UUID> profissionalIds) {
+        if (profissionalIds == null || profissionalIds.isEmpty()) {
+            return Set.of();
+        }
+        return regraDisponibilidadeRepository.buscarProfissionalIdsComDisponibilidade(tenantId, profissionalIds);
     }
 
     @Transactional(readOnly = true)

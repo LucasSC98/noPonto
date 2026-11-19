@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BadgeAtivo } from '../components/BadgeAtivo';
+import { BarraPainel } from '../components/BarraPainel';
 import {
   atualizarProfissional,
   atualizarStatusProfissional,
@@ -138,125 +139,142 @@ export function PaginaProfissionais() {
 
   return (
     <div className={estilos.pagina}>
-      <header className={estilos.barraSuperior}>
-        <div className={estilos.barraConteudo}>
-          <div className={estilos.identidade}>
-            <span className={estilos.marca}>NoPonto</span>
-            <span className={estilos.separador}>/</span>
-            <span className={estilos.tituloPagina}>Profissionais</span>
-          </div>
-          <div className={estilos.acoesBarra}>
-            <button type="button" className={estilos.botaoSecundario} onClick={() => navegar('/dashboard')}>
-              Voltar ao dashboard
-            </button>
-          </div>
-        </div>
-      </header>
+      <BarraPainel atual="/profissionais" />
 
       <main className={estilos.conteudo}>
-        <section className={estilos.painel}>
-          <h1 className={estilos.tituloPainel}>
-            {editandoId ? 'Editar profissional' : 'Novo profissional'}
-          </h1>
+        <div className={estilos.introducao}>
+          <div>
+            <h1 className={estilos.tituloGrande}>Profissionais</h1>
+            <p className={estilos.descricao}>
+              Cadastre quem atende, defina os horários e copie o link público de agendamento.
+            </p>
+          </div>
+          <span className={estilos.contador}>
+            {profissionais.length} {profissionais.length === 1 ? 'cadastrado' : 'cadastrados'}
+          </span>
+        </div>
 
-          <form onSubmit={aoEnviar} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 480 }}>
-            <label>
-              Nome
-              <input
-                type="text"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                required
-                style={{ width: '100%', padding: '0.5rem', marginTop: 4 }}
-              />
-            </label>
+        {erro && <div className={estilos.alertaErro}>{erro}</div>}
 
-            <label>
-              E-mail (opcional)
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{ width: '100%', padding: '0.5rem', marginTop: 4 }}
-              />
-            </label>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" disabled={salvando} className={estilos.botaoSecundario}>
-                {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Cadastrar'}
-              </button>
-              {editandoId && (
-                <button type="button" onClick={limparFormulario} className={estilos.botaoSecundario}>
-                  Cancelar
+        <div className={estilos.gradeCadastro}>
+          <section className={estilos.painel}>
+            <h2 className={estilos.tituloPainel}>{editandoId ? 'Editar profissional' : 'Novo profissional'}</h2>
+            <form className={estilos.formulario} onSubmit={aoEnviar}>
+              <label className={estilos.campo}>
+                <span className={estilos.rotulo}>Nome</span>
+                <input
+                  type="text"
+                  value={nome}
+                  onChange={(evento) => setNome(evento.target.value)}
+                  required
+                  placeholder="Nome completo"
+                  className={estilos.entrada}
+                />
+              </label>
+              <label className={estilos.campo}>
+                <span className={estilos.rotulo}>E-mail (opcional)</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(evento) => setEmail(evento.target.value)}
+                  placeholder="nome@clinica.com"
+                  className={estilos.entrada}
+                />
+              </label>
+              <div className={estilos.linhaBotoes}>
+                <button type="submit" disabled={salvando} className={estilos.botaoPrimario}>
+                  {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Cadastrar'}
                 </button>
-              )}
-            </div>
-          </form>
+                {editandoId && (
+                  <button type="button" onClick={limparFormulario} className={estilos.botaoSecundario}>
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </form>
+          </section>
 
-          {erro && <div className={estilos.alertaErro}>{erro}</div>}
-        </section>
-
-        <section className={estilos.painel}>
-          <h2 className={estilos.tituloPainel}>Lista de profissionais</h2>
-
-          {carregando ? (
-            <p className={estilos.estadoVazio}>Carregando...</p>
-          ) : profissionais.length === 0 ? (
-            <p className={estilos.estadoVazio}>Nenhum profissional cadastrado.</p>
-          ) : (
-            <div className={estilos.tabelaWrapper}>
-              <table className={estilos.tabela}>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>E-mail</th>
-                    <th>Status</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {profissionais.map((p) => (
-                    <tr key={p.id}>
-                      <td>{p.nome}</td>
-                      <td>{p.email || '—'}</td>
-                      <td><BadgeAtivo ativo={p.ativo} /></td>
-                      <td>
-                        <div className={estilos.grupoAcoes}>
-                          <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(p)}>
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className={estilos.botaoAcaoPositivo}
-                            onClick={() => navegar(`/profissionais/${p.id}/disponibilidade`)}
-                          >
-                            Horários
-                          </button>
-                          <button
-                            type="button"
-                            className={p.ativo ? estilos.botaoAcaoPerigo : estilos.botaoAcaoPositivo}
-                            disabled={salvando}
-                            onClick={() => alterarStatus(p, !p.ativo)}
-                          >
-                            {p.ativo ? 'Desativar' : 'Reativar'}
-                          </button>
-                          <button
-                            type="button"
-                            className={estilos.botaoAcaoPositivo}
-                            onClick={() => copiarLinkAgendamento(p.id)}
-                          >
-                            {linkCopiadoId === p.id ? 'Link copiado!' : 'Copiar link de agendamento'}
-                          </button>
+          <section className={estilos.painel}>
+            <h2 className={estilos.tituloPainel}>Equipe</h2>
+            {carregando ? (
+              <p className={estilos.estadoVazio}>Carregando...</p>
+            ) : profissionais.length === 0 ? (
+              <p className={estilos.estadoVazio}>Nenhum profissional cadastrado.</p>
+            ) : (
+              <div className={estilos.listaCartoes}>
+                {profissionais.map((profissional) => (
+                  <article key={profissional.id} className={estilos.cartaoItem}>
+                    <span className={estilos.avatar} aria-hidden="true">
+                      {iniciais(profissional.nome)}
+                    </span>
+                    <div className={estilos.cartaoCorpo}>
+                      <div className={estilos.cartaoTopo}>
+                        <div>
+                          <strong className={estilos.nomeItem}>{profissional.nome}</strong>
+                          <span className={estilos.subItem}>{profissional.email || 'Sem e-mail'}</span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+                        <div className={estilos.badgesTopo}>
+                          {!profissional.temDisponibilidade && (
+                            <button
+                              type="button"
+                              className={estilos.badgeAviso}
+                              onClick={() => navegar(`/profissionais/${profissional.id}/disponibilidade`)}
+                            >
+                              Sem horários configurados
+                            </button>
+                          )}
+                          <BadgeAtivo ativo={profissional.ativo} />
+                        </div>
+                      </div>
+                      <div className={estilos.grupoAcoes}>
+                        <button
+                          type="button"
+                          className={estilos.botaoAcaoPositivo}
+                          onClick={() => iniciarEdicao(profissional)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className={estilos.botaoAcaoPositivo}
+                          onClick={() => navegar(`/profissionais/${profissional.id}/disponibilidade`)}
+                        >
+                          Horários
+                        </button>
+                        <button
+                          type="button"
+                          className={estilos.botaoAcaoPositivo}
+                          onClick={() => copiarLinkAgendamento(profissional.id)}
+                        >
+                          {linkCopiadoId === profissional.id ? 'Link copiado!' : 'Copiar link'}
+                        </button>
+                        <button
+                          type="button"
+                          className={profissional.ativo ? estilos.botaoAcaoPerigo : estilos.botaoAcaoPositivo}
+                          disabled={salvando}
+                          onClick={() => alterarStatus(profissional, !profissional.ativo)}
+                        >
+                          {profissional.ativo ? 'Desativar' : 'Reativar'}
+                        </button>
+                      </div>
+                      {!profissional.temDisponibilidade && (
+                        <p className={estilos.avisoDiscreto}>
+                          O link público abrirá sem horários disponíveis até configurar a agenda.
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );
+}
+
+function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/).slice(0, 2);
+  return partes.map((parte) => parte.charAt(0).toUpperCase()).join('') || '?';
 }
