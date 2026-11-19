@@ -10,6 +10,7 @@ import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.repository.ContagemPorProfissional;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import me.lucascustodio.noponto.repository.ServicoItemRepository;
+import me.lucascustodio.noponto.repository.ServicoVinculadoPorProfissional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -56,8 +57,11 @@ public class GestaoServicoItemService {
         }
         return servicoItemRepository.buscarAtivosPorProfissionais(tenantId, profissionalIds).stream()
                 .collect(Collectors.groupingBy(
-                        servico -> servico.getProfissional().getId(),
-                        Collectors.mapping(ServicoVinculadoResponse::de, Collectors.toList())));
+                        ServicoVinculadoPorProfissional::profissionalId,
+                        Collectors.mapping(
+                                servico -> new ServicoVinculadoResponse(
+                                        servico.id(), servico.nome(), servico.duracaoMinutos()),
+                                Collectors.toList())));
     }
 
     @Transactional

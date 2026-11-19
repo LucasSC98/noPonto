@@ -37,12 +37,16 @@ public interface ServicoItemRepository extends Repository<ServicoItem, UUID> {
     List<ContagemPorProfissional> contarAtivosPorProfissional(@Param("tenantId") UUID tenantId,
                                                               @Param("profissionalIds") Collection<UUID> profissionalIds);
     @Query("""
-            select s from ServicoItem s
+            select new me.lucascustodio.noponto.repository.ServicoVinculadoPorProfissional(
+                s.profissional.id, s.id, s.nome, s.duracaoMinutos
+            )
+            from ServicoItem s
             where s.tenantId = :tenantId
               and s.ativo = true
               and s.profissional.id in :profissionalIds
             order by s.nome asc
             """)
-    List<ServicoItem> buscarAtivosPorProfissionais(@Param("tenantId") UUID tenantId,
-                                                   @Param("profissionalIds") Collection<UUID> profissionalIds);
+    List<ServicoVinculadoPorProfissional> buscarAtivosPorProfissionais(
+            @Param("tenantId") UUID tenantId,
+            @Param("profissionalIds") Collection<UUID> profissionalIds);
 }

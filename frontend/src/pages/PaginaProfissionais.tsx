@@ -311,7 +311,8 @@ export function PaginaProfissionais() {
                   const servicosAtivos = profissional.servicosAtivos ?? [];
                   const quantidadeServicos = profissional.quantidadeServicosAtivos ?? servicosAtivos.length;
                   const agendamentosSemana = profissional.agendamentosSemana ?? 0;
-                  const semDisponibilidade = profissional.temDisponibilidade === false;
+                  // Profissionais inativos não aparecem na agenda pública, por isso ocultamos o alerta de falta de horários para eles.
+                  const semDisponibilidade = profissional.ativo && profissional.temDisponibilidade === false;
 
                   return (
                   <article key={profissional.id} className={estilos.cartaoItem}>
