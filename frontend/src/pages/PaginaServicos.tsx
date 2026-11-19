@@ -29,7 +29,9 @@ export function PaginaServicos() {
   const [salvando, setSalvando] = useState(false);
 
   const [nome, setNome] = useState('');
-  const [duracaoMinutos, setDuracaoMinutos] = useState<number>(30);
+  const [duracaoMinutos, setDuracaoMinutos] = useState('30');
+  const [erroNome, setErroNome] = useState<string | null>(null);
+  const [erroDuracao, setErroDuracao] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [ativo, setAtivo] = useState(true);
 
@@ -81,7 +83,9 @@ export function PaginaServicos() {
 
   function limparFormulario() {
     setNome('');
-    setDuracaoMinutos(30);
+    setDuracaoMinutos('30');
+    setErroNome(null);
+    setErroDuracao(null);
     setEditandoId(null);
     setAtivo(true);
   }
@@ -89,7 +93,9 @@ export function PaginaServicos() {
   function iniciarEdicao(servico: ServicoItemResponse) {
     setEditandoId(servico.id);
     setNome(servico.nome);
-    setDuracaoMinutos(servico.duracaoMinutos);
+    setDuracaoMinutos(String(servico.duracaoMinutos));
+    setErroNome(null);
+    setErroDuracao(null);
     setAtivo(servico.ativo);
   }
 
@@ -125,21 +131,50 @@ export function PaginaServicos() {
       return;
     }
 
+    const nomeLimpo = nome.trim();
+    const duracaoLimpa = duracaoMinutos.trim();
+    const duracaoNumero = Number(duracaoLimpa);
+
+    let valido = true;
+    if (!nomeLimpo) {
+      setErroNome('Informe o nome do serviço.');
+      valido = false;
+    } else if (nomeLimpo.length > 150) {
+      setErroNome('O nome deve ter no máximo 150 caracteres.');
+      valido = false;
+    } else {
+      setErroNome(null);
+    }
+
+    if (!duracaoLimpa) {
+      setErroDuracao('Informe a duração em minutos.');
+      valido = false;
+    } else if (!Number.isInteger(duracaoNumero) || duracaoNumero < 5) {
+      setErroDuracao('A duração deve ser um número inteiro de no mínimo 5 minutos.');
+      valido = false;
+    } else {
+      setErroDuracao(null);
+    }
+
+    if (!valido) {
+      return;
+    }
+
     setSalvando(true);
     setErro(null);
 
     try {
       if (editandoId) {
         await atualizarServico(editandoId, {
-          nome: nome.trim(),
-          duracaoMinutos,
+          nome: nomeLimpo,
+          duracaoMinutos: duracaoNumero,
           ativo,
         });
       } else {
         await criarServico({
           profissionalId: profissionalSelecionado,
-          nome: nome.trim(),
-          duracaoMinutos,
+          nome: nomeLimpo,
+          duracaoMinutos: duracaoNumero,
         });
       }
       limparFormulario();
@@ -202,17 +237,24 @@ export function PaginaServicos() {
             </label>
 
             {profissionalSelecionado && (
-              <form className={estilos.formulario} onSubmit={aoEnviar}>
+              <form className={estilos.formulario} onSubmit={aoEnviar} noValidate>
                 <label className={estilos.campo}>
                   <span className={estilos.rotulo}>Nome do serviço</span>
                   <input
                     type="text"
                     value={nome}
-                    onChange={(evento) => setNome(evento.target.value)}
-                    required
+                    onChange={(evento) => {
+                      setNome(evento.target.value);
+                      if (erroNome) {
+                        setErroNome(null);
+                      }
+                    }}
+                    maxLength={150}
                     placeholder="Consulta, retorno, avaliação..."
-                    className={estilos.entrada}
+                    aria-invalid={Boolean(erroNome)}
+                    className={`${estilos.entrada} ${erroNome ? estilos.entradaErro : ''}`}
                   />
+                  {erroNome && <span className={estilos.mensagemErro}>{erroNome}</span>}
                 </label>
                 <label className={estilos.campo}>
                   <span className={estilos.rotulo}>Duração (minutos)</span>
@@ -221,10 +263,16 @@ export function PaginaServicos() {
                     min={5}
                     step={5}
                     value={duracaoMinutos}
-                    onChange={(evento) => setDuracaoMinutos(Number(evento.target.value))}
-                    required
-                    className={estilos.entrada}
+                    onChange={(evento) => {
+                      setDuracaoMinutos(evento.target.value);
+                      if (erroDuracao) {
+                        setErroDuracao(null);
+                      }
+                    }}
+                    aria-invalid={Boolean(erroDuracao)}
+                    className={`${estilos.entrada} ${erroDuracao ? estilos.entradaErro : ''}`}
                   />
+                  {erroDuracao && <span className={estilos.mensagemErro}>{erroDuracao}</span>}
                 </label>
                 <div className={estilos.linhaBotoes}>
                   <button type="submit" disabled={salvando} className={estilos.botaoPrimario}>

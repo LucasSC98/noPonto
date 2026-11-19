@@ -396,6 +396,20 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+.entradaErro {
+  border-color: var(--cor-perigo);
+}
+
+.entradaErro:focus {
+  border-color: var(--cor-perigo);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.14);
+}
+
+.mensagemErro {
+  font-size: 0.8125rem;
+  color: var(--cor-perigo);
+}
+
 .linhaBotoes {
   display: flex;
   gap: 0.5rem;
