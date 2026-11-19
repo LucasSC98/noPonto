@@ -14,6 +14,9 @@ import me.lucascustodio.noponto.service.GestaoProfissionalService;
 import me.lucascustodio.noponto.service.GestaoRegraDisponibilidadeService;
 import me.lucascustodio.noponto.service.GestaoServicoItemService;
 import me.lucascustodio.noponto.tenant.TenantContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -45,8 +47,8 @@ public class GestaoController {
     // --- Profissionais ---
 
     @GetMapping("/profissionais")
-    public List<ProfissionalResponse> listarProfissionais() {
-        return gestaoProfissionalService.listar(TenantContextHolder.get());
+    public Page<ProfissionalResponse> listarProfissionais(@PageableDefault(size = 20, sort = "nome") Pageable pageable) {
+        return gestaoProfissionalService.listar(TenantContextHolder.get(), pageable);
     }
 
     @PostMapping("/profissionais")
@@ -64,8 +66,9 @@ public class GestaoController {
     // --- Serviços ---
 
     @GetMapping("/servicos")
-    public List<ServicoItemResponse> listarServicos(@RequestParam UUID profissionalId) {
-        return gestaoServicoItemService.listarPorProfissional(TenantContextHolder.get(), profissionalId);
+    public Page<ServicoItemResponse> listarServicos(@RequestParam UUID profissionalId,
+                                                    @PageableDefault(size = 20, sort = "nome") Pageable pageable) {
+        return gestaoServicoItemService.listarPorProfissional(TenantContextHolder.get(), profissionalId, pageable);
     }
 
     @PostMapping("/servicos")
@@ -83,8 +86,9 @@ public class GestaoController {
     // --- Regras de disponibilidade ---
 
     @GetMapping("/regras-disponibilidade")
-    public List<RegraDisponibilidadeResponse> listarRegras(@RequestParam UUID profissionalId) {
-        return gestaoRegraDisponibilidadeService.listarPorProfissional(TenantContextHolder.get(), profissionalId);
+    public Page<RegraDisponibilidadeResponse> listarRegras(@RequestParam UUID profissionalId,
+                                                           @PageableDefault(size = 20, sort = "diaSemana") Pageable pageable) {
+        return gestaoRegraDisponibilidadeService.listarPorProfissional(TenantContextHolder.get(), profissionalId, pageable);
     }
 
     @PostMapping("/regras-disponibilidade")

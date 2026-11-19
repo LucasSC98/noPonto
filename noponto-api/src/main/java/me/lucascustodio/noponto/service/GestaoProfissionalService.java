@@ -6,10 +6,11 @@ import me.lucascustodio.noponto.dto.CriarProfissionalRequest;
 import me.lucascustodio.noponto.dto.ProfissionalResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -22,11 +23,9 @@ public class GestaoProfissionalService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProfissionalResponse> listar(UUID tenantId) {
-        return profissionalRepository.findAllByTenantId(tenantId)
-                .stream()
-                .map(ProfissionalResponse::de)
-                .toList();
+    public Page<ProfissionalResponse> listar(UUID tenantId, Pageable pageable) {
+        return profissionalRepository.findAllByTenantId(tenantId, pageable)
+                .map(ProfissionalResponse::de);
     }
 
     @Transactional

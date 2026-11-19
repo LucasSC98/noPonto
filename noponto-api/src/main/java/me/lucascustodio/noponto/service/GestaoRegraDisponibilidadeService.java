@@ -9,10 +9,11 @@ import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.exception.RegraNegocioExcecao;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import me.lucascustodio.noponto.repository.RegraDisponibilidadeRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -28,11 +29,9 @@ public class GestaoRegraDisponibilidadeService {
     }
 
     @Transactional(readOnly = true)
-    public List<RegraDisponibilidadeResponse> listarPorProfissional(UUID tenantId, UUID profissionalId) {
-        return regraDisponibilidadeRepository.findAllByTenantIdAndProfissionalId(tenantId, profissionalId)
-                .stream()
-                .map(RegraDisponibilidadeResponse::de)
-                .toList();
+    public Page<RegraDisponibilidadeResponse> listarPorProfissional(UUID tenantId, UUID profissionalId, Pageable pageable) {
+        return regraDisponibilidadeRepository.findAllByTenantIdAndProfissionalId(tenantId, profissionalId, pageable)
+                .map(RegraDisponibilidadeResponse::de);
     }
 
     @Transactional

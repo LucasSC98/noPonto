@@ -1,6 +1,8 @@
 package me.lucascustodio.noponto.repository;
 
 import me.lucascustodio.noponto.domain.RegraDisponibilidade;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.Repository;
 
 import java.time.DayOfWeek;
@@ -14,8 +16,8 @@ public interface RegraDisponibilidadeRepository extends Repository<RegraDisponib
 
     Optional<RegraDisponibilidade> findByIdAndTenantId(UUID id, UUID tenantId);
 
-    List<RegraDisponibilidade> findAllByTenantIdAndProfissionalId(UUID tenantId, UUID profissionalId);
-
     List<RegraDisponibilidade> findAllByTenantIdAndProfissionalIdAndDiaSemanaAndAtivoTrue(
             UUID tenantId, UUID profissionalId, DayOfWeek diaSemana);
+
+    Page<RegraDisponibilidade> findAllByTenantIdAndProfissionalId(UUID tenantId, UUID profissionalId, Pageable pageable);
 }
