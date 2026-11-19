@@ -5,8 +5,10 @@ import jakarta.validation.Valid;
 import me.lucascustodio.noponto.dto.AgendamentoResponse;
 import me.lucascustodio.noponto.dto.AtualizarStatusRequest;
 import me.lucascustodio.noponto.dto.CriarAgendamentoRequest;
+import me.lucascustodio.noponto.dto.ServicoItemResponse;
 import me.lucascustodio.noponto.service.AgendamentoConsultaService;
 import me.lucascustodio.noponto.service.AgendamentoService;
+import me.lucascustodio.noponto.service.ProfissionalService;
 import me.lucascustodio.noponto.service.SlotService;
 import me.lucascustodio.noponto.tenant.ResolvedorTenantPublico;
 import me.lucascustodio.noponto.tenant.TenantContextHolder;
@@ -32,16 +34,25 @@ public class AgendamentoController {
     private final SlotService slotService;
     private final AgendamentoService agendamentoService;
     private final AgendamentoConsultaService agendamentoConsultaService;
+    private final ProfissionalService profissionalService;
     private final ResolvedorTenantPublico resolvedorTenantPublico;
 
     public AgendamentoController(SlotService slotService,
                                  AgendamentoService agendamentoService,
                                  AgendamentoConsultaService agendamentoConsultaService,
+                                 ProfissionalService profissionalService,
                                  ResolvedorTenantPublico resolvedorTenantPublico) {
         this.slotService = slotService;
         this.agendamentoService = agendamentoService;
         this.agendamentoConsultaService = agendamentoConsultaService;
+        this.profissionalService = profissionalService;
         this.resolvedorTenantPublico = resolvedorTenantPublico;
+    }
+
+    @GetMapping("/public/profissionais/{id}/servicos")
+    public List<ServicoItemResponse> listarServicos(@PathVariable UUID id, HttpServletRequest request) {
+        UUID tenantId = resolvedorTenantPublico.resolver(request);
+        return profissionalService.listarServicosAtivos(tenantId, id);
     }
 
     @GetMapping("/public/profissionais/{id}/slots")

@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { buscarSlotsDisponiveis, criarAgendamentoPublico } from '../services/agendamentoService';
+import {
+  buscarServicosProfissional,
+  buscarSlotsDisponiveis,
+  criarAgendamentoPublico,
+} from '../services/agendamentoService';
 import { extrairMensagemErro } from '../services/api';
 import {
   dataHojeIsoLocal,
@@ -13,11 +17,11 @@ import {
 } from '../utils/datas';
 import { esquemaAgendamentoPublico } from '../utils/validacao';
 import type { DadosAgendamentoPublico } from '../utils/validacao';
-import type { AgendamentoResponse } from '../types/dominio';
+import type { AgendamentoResponse, ServicoItemResponse } from '../types/dominio';
 import estilos from './PaginaAgendamentoPublico.module.css';
 
 const PASSOS = [
-  { numero: 1, rotulo: 'Data' },
+  { numero: 1, rotulo: 'Serviço e data' },
   { numero: 2, rotulo: 'Horário' },
   { numero: 3, rotulo: 'Seus dados' },
   { numero: 4, rotulo: 'Confirmação' },
@@ -30,6 +34,10 @@ export function PaginaAgendamentoPublico() {
   const servicoInicial = searchParams.get('servicoId') ?? '';
   const subdominioTenant = searchParams.get('tenant') ?? undefined;
   const hojeIso = dataHojeIsoLocal();
+
+  const [servicos, setServicos] = useState<ServicoItemResponse[]>([]);
+  const [carregandoServicos, setCarregandoServicos] = useState(Boolean(profissionalId));
+  const [erroServicos, setErroServicos] = useState<string | null>(null);
 
   const [slots, setSlots] = useState<string[]>([]);
   const [carregandoSlots, setCarregandoSlots] = useState(false);
@@ -64,8 +72,55 @@ export function PaginaAgendamentoPublico() {
   const nomeCliente = valores.nomeCliente ?? '';
   const emailCliente = valores.emailCliente ?? '';
 
+  const servicoAtual = servicos.find((servico) => servico.id === servicoSelecionado);
+
   useEffect(() => {
-    if (!profissionalId || !dataSelecionada || dataNoPassado(dataSelecionada)) {
+    if (!profissionalId) {
+      return;
+    }
+
+    let cancelado = false;
+
+    async function carregarServicos() {
+      setErroServicos(null);
+      try {
+        const lista = await buscarServicosProfissional(profissionalId!, subdominioTenant);
+        if (!cancelado) {
+          setServicos(lista);
+          if (servicoInicial && lista.some((item) => item.id === servicoInicial)) {
+            setValue('servicoItemId', servicoInicial, { shouldValidate: false });
+          } else if (lista.length === 1) {
+            setValue('servicoItemId', lista[0].id, { shouldValidate: false });
+          }
+        }
+      } catch (erro) {
+        if (!cancelado) {
+          setServicos([]);
+          setErroServicos(
+            extrairMensagemErro(erro, 'Não foi possível carregar os serviços do profissional.'),
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCarregandoServicos(false);
+        }
+      }
+    }
+
+    carregarServicos();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [profissionalId, subdominioTenant, servicoInicial, setValue]);
+
+  useEffect(() => {
+    if (
+      !profissionalId ||
+      !servicoSelecionado ||
+      !dataSelecionada ||
+      dataNoPassado(dataSelecionada)
+    ) {
       return;
     }
 
@@ -79,7 +134,7 @@ export function PaginaAgendamentoPublico() {
         const disponiveis = await buscarSlotsDisponiveis(
           profissionalId!,
           dataSelecionada,
-          servicoSelecionado || undefined,
+          servicoSelecionado,
           subdominioTenant,
         );
         if (!cancelado) {
@@ -139,7 +194,7 @@ export function PaginaAgendamentoPublico() {
     setErroEnvio(null);
     reset({
       data: '',
-      servicoItemId: servicoInicial,
+      servicoItemId: servicos.length === 1 ? servicos[0].id : servicoInicial,
       slot: '',
       nomeCliente: '',
       emailCliente: '',
@@ -152,7 +207,7 @@ export function PaginaAgendamentoPublico() {
       ? 4
       : slotSelecionado
         ? 3
-        : dataSelecionada && !dataNoPassado(dataSelecionada)
+        : servicoSelecionado && dataSelecionada && !dataNoPassado(dataSelecionada)
           ? 2
           : 1;
 
@@ -176,7 +231,7 @@ export function PaginaAgendamentoPublico() {
           <span className={estilos.marca}>NoPonto</span>
           <h1 className={estilos.titulo}>Agendar horário</h1>
           <p className={estilos.subtitulo}>
-            Escolha a data, selecione um horário disponível e confirme seus dados.
+            Escolha o serviço e a data, selecione um horário disponível e confirme seus dados.
           </p>
         </header>
 
@@ -212,6 +267,14 @@ export function PaginaAgendamentoPublico() {
                   <dd>{agendamentoConfirmado.emailCliente}</dd>
                 </div>
               )}
+              {servicoAtual && (
+                <div className={estilos.resumoItem}>
+                  <dt>Serviço</dt>
+                  <dd>
+                    {servicoAtual.nome} ({servicoAtual.duracaoMinutos} min)
+                  </dd>
+                </div>
+              )}
               <div className={estilos.resumoItem}>
                 <dt>Data e horário</dt>
                 <dd>{formatarDataHoraLocal(agendamentoConfirmado.inicio)}</dd>
@@ -227,41 +290,61 @@ export function PaginaAgendamentoPublico() {
           </div>
         ) : (
           <form className={estilos.formulario} onSubmit={handleSubmit(aoConfirmar)} noValidate>
-            {/* Passo 1: Seleção da data (e serviço, caso não informado na URL) */}
+            {/* Passo 1: Serviço e data */}
             <fieldset className={estilos.secao}>
-              <legend className={estilos.tituloSecao}>1. Selecione a data</legend>
+              <legend className={estilos.tituloSecao}>1. Selecione o serviço e a data</legend>
 
-              {!servicoInicial && (
+              <div className={estilos.gradeCampos}>
                 <div className={estilos.campo}>
                   <label htmlFor="servicoItemId" className={estilos.rotulo}>
-                    ID do serviço
+                    Serviço
                   </label>
-                  <input
+                  <select
                     id="servicoItemId"
-                    type="text"
-                    placeholder="UUID do serviço"
+                    disabled={carregandoServicos || servicos.length === 0}
                     className={`${estilos.entrada} ${errors.servicoItemId ? estilos.entradaErro : ''}`}
                     {...register('servicoItemId')}
-                  />
+                  >
+                    <option value="">
+                      {carregandoServicos
+                        ? 'Carregando serviços...'
+                        : servicos.length === 0
+                          ? 'Nenhum serviço disponível'
+                          : 'Selecione um serviço'}
+                    </option>
+                    {servicos.map((servico) => (
+                      <option key={servico.id} value={servico.id}>
+                        {servico.nome} ({servico.duracaoMinutos} min)
+                      </option>
+                    ))}
+                  </select>
                   {errors.servicoItemId && (
                     <span className={estilos.mensagemErro}>{errors.servicoItemId.message}</span>
                   )}
                 </div>
-              )}
 
-              <div className={estilos.campo}>
-                <label htmlFor="data" className={estilos.rotulo}>
-                  Data do atendimento
-                </label>
-                <input
-                  id="data"
-                  type="date"
-                  min={hojeIso}
-                  className={`${estilos.entrada} ${errors.data ? estilos.entradaErro : ''}`}
-                  {...register('data')}
-                />
-                {errors.data && <span className={estilos.mensagemErro}>{errors.data.message}</span>}
+                <div className={estilos.campo}>
+                  <label htmlFor="data" className={estilos.rotulo}>
+                    Data do atendimento
+                  </label>
+                  <input
+                    id="data"
+                    type="date"
+                    min={hojeIso}
+                    className={`${estilos.entrada} ${errors.data ? estilos.entradaErro : ''}`}
+                    {...register('data')}
+                  />
+                  {errors.data && (
+                    <span className={estilos.mensagemErro}>{errors.data.message}</span>
+                  )}
+                </div>
               </div>
+
+              {erroServicos && (
+                <div className={estilos.alertaErro} role="alert">
+                  {erroServicos}
+                </div>
+              )}
             </fieldset>
 
             {/* Passo 2: Horários disponíveis */}
@@ -269,9 +352,9 @@ export function PaginaAgendamentoPublico() {
               <legend className={estilos.tituloSecao}>2. Escolha um horário</legend>
               <input type="hidden" {...register('slot')} />
 
-              {!dataSelecionada ? (
+              {!servicoSelecionado || !dataSelecionada ? (
                 <p className={estilos.textoAuxiliar}>
-                  Selecione uma data acima para consultar os horários disponíveis.
+                  Selecione o serviço e a data acima para consultar os horários disponíveis.
                 </p>
               ) : dataNoPassado(dataSelecionada) ? (
                 <p className={estilos.mensagemErro}>
@@ -288,7 +371,11 @@ export function PaginaAgendamentoPublico() {
                   Nenhum horário disponível para esta data. Experimente outro dia.
                 </p>
               ) : (
-                <div className={estilos.gradeSlots} role="radiogroup" aria-label="Horários disponíveis">
+                <div
+                  className={estilos.gradeSlots}
+                  role="radiogroup"
+                  aria-label="Horários disponíveis"
+                >
                   {slots.map((slotIso) => {
                     const selecionado = slotSelecionado === slotIso;
                     return (
@@ -356,6 +443,12 @@ export function PaginaAgendamentoPublico() {
 
               {dataSelecionada && slotSelecionado ? (
                 <div className={estilos.resumoBox}>
+                  {servicoAtual && (
+                    <p className={estilos.resumoLinha}>
+                      <strong>Serviço:</strong> {servicoAtual.nome} ({servicoAtual.duracaoMinutos}{' '}
+                      min)
+                    </p>
+                  )}
                   <p className={estilos.resumoLinha}>
                     <strong>Data:</strong> {formatarDataExtenso(dataSelecionada)}
                   </p>

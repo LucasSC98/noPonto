@@ -2,12 +2,26 @@ import { api } from './api';
 import type {
   AgendamentoResponse,
   CriarAgendamentoRequest,
+  ServicoItemResponse,
   StatusAgendamento,
 } from '../types/dominio';
 
 function cabecalhosTenantPublico(subdominio?: string): Record<string, string> {
   const tenant = subdominio?.trim() || import.meta.env.VITE_TENANT_SUBDOMINIO;
   return tenant ? { 'X-Tenant-Subdominio': tenant } : {};
+}
+
+export async function buscarServicosProfissional(
+  profissionalId: string,
+  subdominioTenant?: string,
+): Promise<ServicoItemResponse[]> {
+  const resposta = await api.get<ServicoItemResponse[]>(
+    `/public/profissionais/${profissionalId}/servicos`,
+    {
+      headers: cabecalhosTenantPublico(subdominioTenant),
+    },
+  );
+  return resposta.data;
 }
 
 export async function buscarSlotsDisponiveis(

@@ -11,6 +11,12 @@ export interface LoginResponse {
   expiraEmSegundos: number;
 }
 
+export interface ServicoItemResponse {
+  id: string;
+  nome: string;
+  duracaoMinutos: number;
+}
+
 export interface CriarAgendamentoRequest {
   profissionalId: string;
   servicoItemId: string;

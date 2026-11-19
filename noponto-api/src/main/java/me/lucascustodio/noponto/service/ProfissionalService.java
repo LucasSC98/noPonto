@@ -2,12 +2,14 @@ package me.lucascustodio.noponto.service;
 
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.ServicoItem;
+import me.lucascustodio.noponto.dto.ServicoItemResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import me.lucascustodio.noponto.repository.ServicoItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -44,5 +46,15 @@ public class ProfissionalService {
         return servicoItemRepository
                 .findByIdAndTenantIdAndProfissionalIdAndAtivoTrue(servicoItemId, tenantId, profissionalId)
                 .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Serviço não encontrado para o profissional."));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ServicoItemResponse> listarServicosAtivos(UUID tenantId, UUID profissionalId) {
+        buscarAtivo(tenantId, profissionalId);
+        return servicoItemRepository
+                .findAllByTenantIdAndProfissionalIdAndAtivoTrue(tenantId, profissionalId)
+                .stream()
+                .map(ServicoItemResponse::de)
+                .toList();
     }
 }
