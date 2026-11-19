@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BadgeAtivo } from '../components/BadgeAtivo';
@@ -15,6 +15,8 @@ import { removerToken } from '../services/authService';
 import type { ProfissionalResponse } from '../types/gestao';
 import estilos from './PaginaDashboard.module.css';
 
+type FiltroStatusProfissional = 'TODOS' | 'ATIVOS' | 'INATIVOS';
+
 export function PaginaProfissionais() {
   const navegar = useNavigate();
 
@@ -29,6 +31,17 @@ export function PaginaProfissionais() {
   const [ativo, setAtivo] = useState(true);
   const [subdominioTenant, setSubdominioTenant] = useState<string | null>(null);
   const [linkCopiadoId, setLinkCopiadoId] = useState<string | null>(null);
+
+  const [busca, setBusca] = useState('');
+  const [buscaDebounced, setBuscaDebounced] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatusProfissional>('TODOS');
+
+  useEffect(() => {
+    const temporizador = window.setTimeout(() => {
+      setBuscaDebounced(busca.trim().toLowerCase());
+    }, 300);
+    return () => window.clearTimeout(temporizador);
+  }, [busca]);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -137,6 +150,32 @@ export function PaginaProfissionais() {
     }
   }
 
+  const contagemStatus = useMemo(() => {
+    const ativos = profissionais.filter((p) => p.ativo).length;
+    return {
+      todos: profissionais.length,
+      ativos,
+      inativos: profissionais.length - ativos,
+    };
+  }, [profissionais]);
+
+  const profissionaisFiltrados = useMemo(() => {
+    return profissionais.filter((profissional) => {
+      if (filtroStatus === 'ATIVOS' && !profissional.ativo) {
+        return false;
+      }
+      if (filtroStatus === 'INATIVOS' && profissional.ativo) {
+        return false;
+      }
+      if (!buscaDebounced) {
+        return true;
+      }
+      const nomeMatch = profissional.nome.toLowerCase().includes(buscaDebounced);
+      const emailMatch = (profissional.email ?? '').toLowerCase().includes(buscaDebounced);
+      return nomeMatch || emailMatch;
+    });
+  }, [profissionais, filtroStatus, buscaDebounced]);
+
   return (
     <div className={estilos.pagina}>
       <BarraPainel atual="/profissionais" />
@@ -150,7 +189,8 @@ export function PaginaProfissionais() {
             </p>
           </div>
           <span className={estilos.contador}>
-            {profissionais.length} {profissionais.length === 1 ? 'cadastrado' : 'cadastrados'}
+            {profissionaisFiltrados.length}{' '}
+            {profissionaisFiltrados.length === 1 ? 'cadastrado' : 'cadastrados'}
           </span>
         </div>
 
@@ -196,13 +236,45 @@ export function PaginaProfissionais() {
 
           <section className={estilos.painel}>
             <h2 className={estilos.tituloPainel}>Equipe</h2>
+            <div className={estilos.barraFiltros}>
+              <input
+                type="search"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+                placeholder="Buscar por nome ou e-mail..."
+                aria-label="Buscar profissional por nome ou e-mail"
+                className={estilos.campoBusca}
+              />
+              <div className={estilos.filtros} role="tablist" aria-label="Filtrar profissionais por status">
+                {(
+                  [
+                    { valor: 'TODOS', rotulo: `Todos (${contagemStatus.todos})` },
+                    { valor: 'ATIVOS', rotulo: `Ativos (${contagemStatus.ativos})` },
+                    { valor: 'INATIVOS', rotulo: `Inativos (${contagemStatus.inativos})` },
+                  ] as const
+                ).map((opcao) => (
+                  <button
+                    key={opcao.valor}
+                    type="button"
+                    role="tab"
+                    aria-selected={filtroStatus === opcao.valor}
+                    className={`${estilos.botaoFiltro} ${
+                      filtroStatus === opcao.valor ? estilos.botaoFiltroAtivo : ''
+                    }`}
+                    onClick={() => setFiltroStatus(opcao.valor)}
+                  >
+                    {opcao.rotulo}
+                  </button>
+                ))}
+              </div>
+            </div>
             {carregando ? (
               <p className={estilos.estadoVazio}>Carregando...</p>
-            ) : profissionais.length === 0 ? (
-              <p className={estilos.estadoVazio}>Nenhum profissional cadastrado.</p>
+            ) : profissionaisFiltrados.length === 0 ? (
+              <p className={estilos.estadoVazio}>Nenhum profissional encontrado</p>
             ) : (
               <div className={estilos.listaCartoes}>
-                {profissionais.map((profissional) => (
+                {profissionaisFiltrados.map((profissional) => (
                   <article key={profissional.id} className={estilos.cartaoItem}>
                     <span className={estilos.avatar} aria-hidden="true">
                       {iniciais(profissional.nome)}

@@ -200,6 +200,28 @@
   font-weight: 700;
 }
 
+.barraFiltros {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.campoBusca {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-size: 0.875rem;
+}
+
+.campoBusca:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
 .filtros {
   display: flex;
   flex-wrap: wrap;
