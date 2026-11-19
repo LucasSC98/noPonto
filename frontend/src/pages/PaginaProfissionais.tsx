@@ -307,7 +307,13 @@ export function PaginaProfissionais() {
               <p className={estilos.estadoVazio}>Nenhum profissional encontrado</p>
             ) : (
               <div className={estilos.listaCartoes}>
-                {profissionaisFiltrados.map((profissional) => (
+                {profissionaisFiltrados.map((profissional) => {
+                  const servicosAtivos = profissional.servicosAtivos ?? [];
+                  const quantidadeServicos = profissional.quantidadeServicosAtivos ?? servicosAtivos.length;
+                  const agendamentosSemana = profissional.agendamentosSemana ?? 0;
+                  const semDisponibilidade = profissional.temDisponibilidade === false;
+
+                  return (
                   <article key={profissional.id} className={estilos.cartaoItem}>
                     <span className={estilos.avatar} aria-hidden="true">
                       {iniciais(profissional.nome)}
@@ -321,14 +327,11 @@ export function PaginaProfissionais() {
                           )}
                           <span className={estilos.subItem}>{profissional.email || 'Sem e-mail'}</span>
                           <span className={estilos.subItem}>
-                            {formatarResumoProfissional(
-                              profissional.quantidadeServicosAtivos,
-                              profissional.agendamentosSemana,
-                            )}
+                            {formatarResumoProfissional(quantidadeServicos, agendamentosSemana)}
                           </span>
                         </div>
                         <div className={estilos.badgesTopo}>
-                          {!profissional.temDisponibilidade && (
+                          {semDisponibilidade && (
                             <button
                               type="button"
                               className={estilos.badgeAviso}
@@ -341,19 +344,19 @@ export function PaginaProfissionais() {
                         </div>
                       </div>
                       <div className={estilos.listaChips}>
-                        {profissional.servicosAtivos.slice(0, 3).map((servico) => (
+                        {servicosAtivos.slice(0, 3).map((servico) => (
                           <span key={servico.id} className={estilos.pilula}>
                             {servico.nome} · {servico.duracaoMinutos}min
                           </span>
                         ))}
-                        {profissional.servicosAtivos.length > 3 && (
+                        {servicosAtivos.length > 3 && (
                           <span
                             className={estilos.chipExtra}
-                            title={profissional.servicosAtivos
+                            title={servicosAtivos
                               .map((servico) => `${servico.nome} · ${servico.duracaoMinutos}min`)
                               .join('\n')}
                           >
-                            +{profissional.servicosAtivos.length - 3}
+                            +{servicosAtivos.length - 3}
                           </span>
                         )}
                         <button
@@ -395,14 +398,15 @@ export function PaginaProfissionais() {
                           ]}
                         />
                       </div>
-                      {!profissional.temDisponibilidade && (
+                      {semDisponibilidade && (
                         <p className={estilos.avisoDiscreto}>
                           O link público abrirá sem horários disponíveis até configurar a agenda.
                         </p>
                       )}
                     </div>
                   </article>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
