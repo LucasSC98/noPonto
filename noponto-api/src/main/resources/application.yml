@@ -21,3 +21,9 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+
+noponto:
+  jwt:
+    # Em produção, defina NOPONTO_JWT_SEGREDO com no mínimo 32 bytes aleatórios
+    segredo: ${NOPONTO_JWT_SEGREDO:noponto-dev-segredo-jwt-trocar-em-producao-0123456789}
+    expiracao-minutos: ${NOPONTO_JWT_EXPIRACAO_MINUTOS:480}
