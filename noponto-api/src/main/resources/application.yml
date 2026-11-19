@@ -25,6 +25,8 @@ spring:
     baseline-on-migrate: true
 
 noponto:
+  cors:
+    origem-permitida: ${NOPONTO_CORS_ORIGEM_PERMITIDA:http://localhost:5173}
   tenant:
     # Rotas públicas resolvem o tenant pelo subdomínio: <tenant>.<dominio-base>
     dominio-base: ${NOPONTO_DOMINIO_BASE:noponto.com}

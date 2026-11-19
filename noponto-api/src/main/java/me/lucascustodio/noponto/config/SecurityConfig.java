@@ -1,6 +1,7 @@
 package me.lucascustodio.noponto.config;
 
 import me.lucascustodio.noponto.tenant.JwtAuthFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,20 +16,31 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final long CORS_MAX_AGE_SEGUNDOS = 3600L;
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthFilter jwtAuthFilter,
+                                                   CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rotas -> rotas
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/public/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/public/agendamentos").permitAll()
@@ -38,6 +50,22 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${noponto.cors.origem-permitida}") String origemPermitida) {
+        CorsConfiguration configuracao = new CorsConfiguration();
+        configuracao.setAllowedOrigins(List.of(origemPermitida));
+        configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuracao.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Subdominio"));
+        configuracao.setExposedHeaders(List.of("Authorization"));
+        configuracao.setAllowCredentials(true);
+        configuracao.setMaxAge(CORS_MAX_AGE_SEGUNDOS);
+
+        UrlBasedCorsConfigurationSource fonte = new UrlBasedCorsConfigurationSource();
+        fonte.registerCorsConfiguration("/**", configuracao);
+        return fonte;
     }
 
     @Bean
