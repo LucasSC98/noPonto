@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import me.lucascustodio.noponto.dto.AgendamentoResponse;
 import me.lucascustodio.noponto.dto.AtualizarStatusRequest;
 import me.lucascustodio.noponto.dto.CriarAgendamentoRequest;
+import me.lucascustodio.noponto.dto.ProfissionalPublicoResponse;
 import me.lucascustodio.noponto.dto.ServicoItemResponse;
 import me.lucascustodio.noponto.service.AgendamentoConsultaService;
 import me.lucascustodio.noponto.service.AgendamentoService;
@@ -47,6 +48,12 @@ public class AgendamentoController {
         this.agendamentoConsultaService = agendamentoConsultaService;
         this.profissionalService = profissionalService;
         this.resolvedorTenantPublico = resolvedorTenantPublico;
+    }
+
+    @GetMapping("/public/profissionais/{id}")
+    public ProfissionalPublicoResponse buscarProfissionalPublico(@PathVariable UUID id, HttpServletRequest request) {
+        UUID tenantId = resolvedorTenantPublico.resolver(request);
+        return profissionalService.buscarPublico(tenantId, id);
     }
 
     @GetMapping("/public/profissionais/{id}/servicos")

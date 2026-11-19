@@ -24,6 +24,12 @@ public class Profissional extends EntidadeBase {
     @Column(length = 255)
     private String email;
 
+    @Column(length = 80)
+    private String especialidade;
+
+    @Column(length = 20)
+    private String telefone;
+
     @Column(nullable = false)
     private Boolean ativo = Boolean.TRUE;
 

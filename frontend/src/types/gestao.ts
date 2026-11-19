@@ -8,6 +8,8 @@ export interface ProfissionalResponse {
   id: string;
   nome: string;
   email: string | null;
+  especialidade: string | null;
+  telefone: string | null;
   ativo: boolean;
   temDisponibilidade: boolean;
   quantidadeServicosAtivos: number;
@@ -18,12 +20,16 @@ export interface ProfissionalResponse {
 export interface CriarProfissionalRequest {
   nome: string;
   email?: string;
+  especialidade?: string;
+  telefone?: string;
 }
 
 export interface AtualizarProfissionalRequest {
   nome: string;
   email?: string;
   ativo: boolean;
+  especialidade?: string;
+  telefone?: string;
 }
 
 export interface ServicoItemResponse {

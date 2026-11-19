@@ -2,6 +2,7 @@ package me.lucascustodio.noponto.service;
 
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.ServicoItem;
+import me.lucascustodio.noponto.dto.ProfissionalPublicoResponse;
 import me.lucascustodio.noponto.dto.ServicoItemResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.exception.RegraNegocioExcecao;
@@ -62,6 +63,11 @@ public class ProfissionalService {
         return servicoItemRepository
                 .findByIdAndTenantIdAndProfissionalIdAndAtivoTrue(servicoItemId, tenantId, profissionalId)
                 .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Serviço não encontrado para o profissional."));
+    }
+
+    @Transactional(readOnly = true)
+    public ProfissionalPublicoResponse buscarPublico(UUID tenantId, UUID profissionalId) {
+        return ProfissionalPublicoResponse.de(buscarAtivo(tenantId, profissionalId));
     }
 
     @Transactional(readOnly = true)

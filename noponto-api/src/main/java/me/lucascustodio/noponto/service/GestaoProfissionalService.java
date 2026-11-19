@@ -63,7 +63,9 @@ public class GestaoProfissionalService {
         Profissional profissional = new Profissional();
         profissional.setTenantId(tenantId);
         profissional.setNome(requisicao.nome());
-        profissional.setEmail(requisicao.email());
+        profissional.setEmail(normalizarOpcional(requisicao.email()));
+        profissional.setEspecialidade(normalizarOpcional(requisicao.especialidade()));
+        profissional.setTelefone(normalizarOpcional(requisicao.telefone()));
         profissional.setAtivo(true);
 
         return ProfissionalResponse.de(profissionalRepository.save(profissional), false, 0L, List.of());
@@ -75,10 +77,19 @@ public class GestaoProfissionalService {
                 .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Profissional não encontrado."));
 
         profissional.setNome(requisicao.nome());
-        profissional.setEmail(requisicao.email());
+        profissional.setEmail(normalizarOpcional(requisicao.email()));
+        profissional.setEspecialidade(normalizarOpcional(requisicao.especialidade()));
+        profissional.setTelefone(normalizarOpcional(requisicao.telefone()));
         profissional.setAtivo(requisicao.ativo());
 
         return montarResposta(profissionalRepository.save(profissional), tenantId);
+    }
+
+    private static String normalizarOpcional(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        return valor.trim();
     }
 
     @Transactional

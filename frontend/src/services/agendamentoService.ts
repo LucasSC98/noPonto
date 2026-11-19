@@ -2,6 +2,7 @@ import { api } from './api';
 import type {
   AgendamentoResponse,
   CriarAgendamentoRequest,
+  ProfissionalPublicoResponse,
   ServicoItemResponse,
   StatusAgendamento,
 } from '../types/dominio';
@@ -9,6 +10,19 @@ import type {
 function parametrosTenantPublico(subdominio?: string): Record<string, string> {
   const tenant = subdominio?.trim();
   return tenant ? { tenant } : {};
+}
+
+export async function buscarProfissionalPublico(
+  profissionalId: string,
+  subdominioTenant?: string,
+): Promise<ProfissionalPublicoResponse> {
+  const resposta = await api.get<ProfissionalPublicoResponse>(
+    `/public/profissionais/${profissionalId}`,
+    {
+      params: parametrosTenantPublico(subdominioTenant),
+    },
+  );
+  return resposta.data;
 }
 
 export async function buscarServicosProfissional(

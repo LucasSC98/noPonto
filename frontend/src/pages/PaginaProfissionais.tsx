@@ -28,6 +28,8 @@ export function PaginaProfissionais() {
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
+  const [especialidade, setEspecialidade] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [ativo, setAtivo] = useState(true);
   const [subdominioTenant, setSubdominioTenant] = useState<string | null>(null);
@@ -113,6 +115,8 @@ export function PaginaProfissionais() {
   function limparFormulario() {
     setNome('');
     setEmail('');
+    setEspecialidade('');
+    setTelefone('');
     setEditandoId(null);
     setAtivo(true);
   }
@@ -121,6 +125,8 @@ export function PaginaProfissionais() {
     setEditandoId(profissional.id);
     setNome(profissional.nome);
     setEmail(profissional.email ?? '');
+    setEspecialidade(profissional.especialidade ?? '');
+    setTelefone(profissional.telefone ?? '');
     setAtivo(profissional.ativo);
   }
 
@@ -134,12 +140,16 @@ export function PaginaProfissionais() {
         await atualizarProfissional(editandoId, {
           nome: nome.trim(),
           email: email.trim() || undefined,
+          especialidade: especialidade.trim() || undefined,
+          telefone: telefone.trim() || undefined,
           ativo,
         });
       } else {
         await criarProfissional({
           nome: nome.trim(),
           email: email.trim() || undefined,
+          especialidade: especialidade.trim() || undefined,
+          telefone: telefone.trim() || undefined,
         });
       }
       limparFormulario();
@@ -222,6 +232,28 @@ export function PaginaProfissionais() {
                   className={estilos.entrada}
                 />
               </label>
+              <label className={estilos.campo}>
+                <span className={estilos.rotulo}>Especialidade (opcional)</span>
+                <input
+                  type="text"
+                  maxLength={80}
+                  value={especialidade}
+                  onChange={(evento) => setEspecialidade(evento.target.value)}
+                  placeholder="Ex.: Clínico Geral"
+                  className={estilos.entrada}
+                />
+              </label>
+              <label className={estilos.campo}>
+                <span className={estilos.rotulo}>Telefone (opcional)</span>
+                <input
+                  type="tel"
+                  maxLength={20}
+                  value={telefone}
+                  onChange={(evento) => setTelefone(evento.target.value)}
+                  placeholder="(11) 99999-9999"
+                  className={estilos.entrada}
+                />
+              </label>
               <div className={estilos.linhaBotoes}>
                 <button type="submit" disabled={salvando} className={estilos.botaoPrimario}>
                   {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Cadastrar'}
@@ -284,6 +316,9 @@ export function PaginaProfissionais() {
                       <div className={estilos.cartaoTopo}>
                         <div>
                           <strong className={estilos.nomeItem}>{profissional.nome}</strong>
+                          {profissional.especialidade && (
+                            <span className={estilos.subItem}>{profissional.especialidade}</span>
+                          )}
                           <span className={estilos.subItem}>{profissional.email || 'Sem e-mail'}</span>
                           <span className={estilos.subItem}>
                             {formatarResumoProfissional(

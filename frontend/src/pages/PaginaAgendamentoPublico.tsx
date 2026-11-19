@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
+  buscarProfissionalPublico,
   buscarServicosProfissional,
   buscarSlotsDisponiveis,
   criarAgendamentoPublico,
@@ -17,7 +18,11 @@ import {
 } from '../utils/datas';
 import { esquemaAgendamentoPublico } from '../utils/validacao';
 import type { DadosAgendamentoPublico } from '../utils/validacao';
-import type { AgendamentoResponse, ServicoItemResponse } from '../types/dominio';
+import type {
+  AgendamentoResponse,
+  ProfissionalPublicoResponse,
+  ServicoItemResponse,
+} from '../types/dominio';
 import estilos from './PaginaAgendamentoPublico.module.css';
 
 const PASSOS = [
@@ -36,6 +41,8 @@ export function PaginaAgendamentoPublico() {
   const subdominioTenant = tenantNaUrl ? tenantNaUrl : TENANT_PUBLICO_PADRAO;
   const hojeIso = dataHojeIsoLocal();
 
+  const [profissionalPublico, setProfissionalPublico] =
+    useState<ProfissionalPublicoResponse | null>(null);
   const [servicos, setServicos] = useState<ServicoItemResponse[]>([]);
   const [carregandoServicos, setCarregandoServicos] = useState(Boolean(profissionalId));
   const [erroServicos, setErroServicos] = useState<string | null>(null);
@@ -85,8 +92,12 @@ export function PaginaAgendamentoPublico() {
     async function carregarServicos() {
       setErroServicos(null);
       try {
-        const lista = await buscarServicosProfissional(profissionalId!, subdominioTenant);
+        const [dadosProfissional, lista] = await Promise.all([
+          buscarProfissionalPublico(profissionalId!, subdominioTenant),
+          buscarServicosProfissional(profissionalId!, subdominioTenant),
+        ]);
         if (!cancelado) {
+          setProfissionalPublico(dadosProfissional);
           setServicos(lista);
           if (servicoInicial && lista.some((item) => item.id === servicoInicial)) {
             setValue('servicoItemId', servicoInicial, { shouldValidate: false });
@@ -230,7 +241,13 @@ export function PaginaAgendamentoPublico() {
       <section className={estilos.card}>
         <header className={estilos.cabecalho}>
           <span className={estilos.marca}>NoPonto</span>
-          <h1 className={estilos.titulo}>Agendar horário</h1>
+          <h1 className={estilos.titulo}>
+            {profissionalPublico
+              ? profissionalPublico.especialidade
+                ? `${profissionalPublico.nome} · ${profissionalPublico.especialidade}`
+                : profissionalPublico.nome
+              : 'Agendar horário'}
+          </h1>
           <p className={estilos.subtitulo}>
             Escolha o serviço e a data, selecione um horário disponível e confirme seus dados.
           </p>

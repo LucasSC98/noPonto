@@ -2,6 +2,7 @@ package me.lucascustodio.noponto.service;
 
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.ServicoItem;
+import me.lucascustodio.noponto.dto.ProfissionalPublicoResponse;
 import me.lucascustodio.noponto.dto.ServicoItemResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.exception.RegraNegocioExcecao;
@@ -90,6 +91,21 @@ class ProfissionalServiceTest {
         assertThatThrownBy(() -> profissionalService.buscarAtivoComBloqueio(TENANT_ID, PROFISSIONAL_ID))
                 .isInstanceOf(RegraNegocioExcecao.class)
                 .hasMessage("Profissional inativo não aceita novos agendamentos.");
+    }
+
+    @Test
+    void deve_retornarNomeEEspecialidadeSemTelefone_quando_buscarProfissionalPublico() {
+        Profissional profissional = new Profissional();
+        profissional.setId(PROFISSIONAL_ID);
+        profissional.setNome("Dr. João Silva");
+        profissional.setEspecialidade("Clínico Geral");
+        profissional.setTelefone("(11) 99999-9999");
+        when(profissionalRepository.findByIdAndTenantIdAndAtivoTrue(PROFISSIONAL_ID, TENANT_ID))
+                .thenReturn(Optional.of(profissional));
+
+        ProfissionalPublicoResponse resposta = profissionalService.buscarPublico(TENANT_ID, PROFISSIONAL_ID);
+
+        assertThat(resposta).isEqualTo(new ProfissionalPublicoResponse(PROFISSIONAL_ID, "Dr. João Silva", "Clínico Geral"));
     }
 
     @Test

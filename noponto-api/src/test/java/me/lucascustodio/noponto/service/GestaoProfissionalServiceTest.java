@@ -1,6 +1,8 @@
 package me.lucascustodio.noponto.service;
 
 import me.lucascustodio.noponto.domain.Profissional;
+import me.lucascustodio.noponto.dto.AtualizarProfissionalRequest;
+import me.lucascustodio.noponto.dto.CriarProfissionalRequest;
 import me.lucascustodio.noponto.dto.ProfissionalResponse;
 import me.lucascustodio.noponto.dto.ServicoVinculadoResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
@@ -89,6 +91,28 @@ class GestaoProfissionalServiceTest {
         assertThat(segundo.quantidadeServicosAtivos()).isZero();
         assertThat(segundo.servicosAtivos()).isEmpty();
         assertThat(segundo.agendamentosSemana()).isZero();
+    }
+
+    @Test
+    void deve_salvarEspecialidadeETelefone_quando_criarEAtualizarProfissional() {
+        ProfissionalResponse criado = service.criar(
+                new CriarProfissionalRequest("Dr. Lucas", "lucas@clinica.com", "  Cardiologia ", " (11) 99999-0000 "),
+                TENANT_ID);
+
+        assertThat(criado.especialidade()).isEqualTo("Cardiologia");
+        assertThat(criado.telefone()).isEqualTo("(11) 99999-0000");
+
+        Profissional existente = profissionalAtivo();
+        when(profissionalRepository.findByIdAndTenantId(PROFISSIONAL_ID, TENANT_ID))
+                .thenReturn(Optional.of(existente));
+
+        ProfissionalResponse atualizado = service.atualizar(
+                PROFISSIONAL_ID,
+                new AtualizarProfissionalRequest("Ana", "ana@clinica.com", true, "Dermatologia", "   "),
+                TENANT_ID);
+
+        assertThat(atualizado.especialidade()).isEqualTo("Dermatologia");
+        assertThat(atualizado.telefone()).isNull();
     }
 
     @Test

@@ -11,6 +11,12 @@ export interface LoginResponse {
   expiraEmSegundos: number;
 }
 
+export interface ProfissionalPublicoResponse {
+  id: string;
+  nome: string;
+  especialidade: string | null;
+}
+
 export interface ServicoItemResponse {
   id: string;
   nome: string;

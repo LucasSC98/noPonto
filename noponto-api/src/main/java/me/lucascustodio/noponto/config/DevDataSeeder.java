@@ -83,14 +83,15 @@ public class DevDataSeeder implements ApplicationRunner {
         profissional.setTenantId(tenant.getId());
         profissional.setNome("Dr. João Silva");
         profissional.setEmail("joao@clinica.com");
+        profissional.setEspecialidade("Clínico Geral");
         profissional.setAtivo(Boolean.TRUE);
         profissional = profissionalRepository.save(profissional);
 
         ServicoItem consultaGeral = criarServico(tenant, profissional, "Consulta Geral", 30);
         ServicoItem retorno = criarServico(tenant, profissional, "Retorno", 15);
 
-        OffsetTime horaInicio = OffsetTime.of(9, 0, 0, 0, ZoneOffset.UTC);
-        OffsetTime horaFim = OffsetTime.of(18, 0, 0, 0, ZoneOffset.UTC);
+        OffsetTime horaInicio = OffsetTime.of(9, 0, 0, 0, ZoneOffset.ofHours(-3));
+        OffsetTime horaFim = OffsetTime.of(18, 0, 0, 0, ZoneOffset.ofHours(-3));
         for (DayOfWeek dia : DIAS_UTEIS) {
             RegraDisponibilidade regra = new RegraDisponibilidade();
             regra.setTenantId(tenant.getId());
