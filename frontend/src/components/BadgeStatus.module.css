@@ -1,0 +1,30 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.pendente {
+  background-color: var(--cor-aviso-fundo);
+  color: var(--cor-aviso);
+}
+
+.confirmado {
+  background-color: var(--cor-info-fundo);
+  color: var(--cor-info);
+}
+
+.cancelado {
+  background-color: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+}
+
+.concluido {
+  background-color: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso);
+}

@@ -1,0 +1,297 @@
+.pagina {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.barraSuperior {
+  background-color: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.barraConteudo {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.identidade {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.marca {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--cor-primaria);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.separador {
+  color: var(--cor-borda-forte);
+}
+
+.tituloPagina {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--cor-texto-secundario);
+}
+
+.acoesBarra {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.botaoSecundario,
+.botaoSair {
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--raio-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botaoSecundario {
+  border: 1px solid var(--cor-borda-forte);
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto);
+}
+
+.botaoSecundario:hover:not(:disabled) {
+  background-color: var(--cor-superficie-sutil);
+}
+
+.botaoSecundario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.botaoSair {
+  border: 1px solid #fecaca;
+  background-color: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+}
+
+.botaoSair:hover {
+  background-color: #fecaca;
+}
+
+.conteudo {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.75rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.resumo {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.cardMetrica {
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rotuloMetrica {
+  font-size: 0.8125rem;
+  color: var(--cor-texto-suave);
+  font-weight: 500;
+}
+
+.valorMetrica {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.painel {
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-card);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cabecalhoPainel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tituloPainel {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.botaoFiltro {
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: 9999px;
+  background-color: var(--cor-superficie-sutil);
+  color: var(--cor-texto-secundario);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botaoFiltro:hover {
+  border-color: var(--cor-borda-forte);
+}
+
+.botaoFiltroAtivo {
+  border-color: var(--cor-primaria);
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+}
+
+.alertaErro {
+  background-color: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+  border: 1px solid #fecaca;
+  border-radius: var(--raio-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.estadoVazio {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--cor-texto-suave);
+  font-size: 0.9375rem;
+}
+
+.tabelaWrapper {
+  overflow-x: auto;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tabela th {
+  text-align: left;
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid var(--cor-borda);
+  color: var(--cor-texto-suave);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.tabela td {
+  padding: 0.875rem;
+  border-bottom: 1px solid var(--cor-borda);
+  vertical-align: middle;
+}
+
+.tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.celulaPrincipal {
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.celulaSecundaria {
+  font-size: 0.8125rem;
+  color: var(--cor-texto-suave);
+}
+
+.dataHora {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.semAcoes {
+  color: var(--cor-texto-suave);
+}
+
+.grupoAcoes {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: nowrap;
+}
+
+.botaoAcao {
+  padding: 0.375rem 0.6875rem;
+  border-radius: var(--raio-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.botaoAcao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.botaoAcaoPositivo {
+  border: 1px solid #bfdbfe;
+  background-color: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+}
+
+.botaoAcaoPositivo:hover:not(:disabled) {
+  background-color: var(--cor-info-fundo);
+}
+
+.botaoAcaoPerigo {
+  border: 1px solid #fecaca;
+  background-color: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+}
+
+.botaoAcaoPerigo:hover:not(:disabled) {
+  background-color: #fecaca;
+}
+
+@media (max-width: 768px) {
+  .resumo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .conteudo {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .painel {
+    padding: 1rem;
+  }
+}

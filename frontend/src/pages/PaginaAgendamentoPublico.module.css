@@ -1,0 +1,320 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 680px;
+  height: fit-content;
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-card);
+  padding: 2rem;
+}
+
+.cabecalho {
+  margin-bottom: 1.5rem;
+}
+
+.marca {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--cor-primaria);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.subtitulo {
+  margin: 0.375rem 0 0;
+  color: var(--cor-texto-secundario);
+  font-size: 0.9375rem;
+}
+
+.passos {
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.passo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--raio-sm);
+  border: 1px solid var(--cor-borda);
+  background-color: var(--cor-superficie-sutil);
+  color: var(--cor-texto-suave);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.passoAtivo {
+  border-color: #bfdbfe;
+  background-color: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+  font-weight: 600;
+}
+
+.numeroPasso {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: var(--cor-borda);
+  color: var(--cor-texto-secundario);
+  flex-shrink: 0;
+}
+
+.passoAtivo .numeroPasso {
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.secao {
+  margin: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.tituloSecao {
+  padding: 0 0.375rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--cor-texto);
+}
+
+.gradeCampos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.rotulo {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.entrada {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto);
+}
+
+.entrada:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.entradaErro {
+  border-color: var(--cor-perigo);
+}
+
+.mensagemErro {
+  font-size: 0.8125rem;
+  color: var(--cor-perigo);
+}
+
+.textoAuxiliar {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cor-texto-suave);
+}
+
+.gradeSlots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 0.625rem;
+}
+
+.botaoSlot {
+  padding: 0.625rem 0.5rem;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.botaoSlot:hover {
+  border-color: var(--cor-primaria);
+  background-color: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+}
+
+.botaoSlotSelecionado {
+  border-color: var(--cor-primaria);
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+}
+
+.botaoSlotSelecionado:hover {
+  background-color: var(--cor-primaria-hover);
+  color: #ffffff;
+}
+
+.resumoBox {
+  background-color: var(--cor-superficie-sutil);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resumoLinha {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.alertaErro {
+  background-color: var(--cor-perigo-fundo);
+  color: var(--cor-perigo);
+  border: 1px solid #fecaca;
+  border-radius: var(--raio-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.botaoPrimario {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-primaria);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.botaoPrimario:hover:not(:disabled) {
+  background-color: var(--cor-primaria-hover);
+}
+
+.botaoPrimario:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.botaoSecundario {
+  padding: 0.6875rem 1.25rem;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: var(--raio-sm);
+  background-color: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botaoSecundario:hover {
+  background-color: var(--cor-superficie-sutil);
+}
+
+.sucesso {
+  border: 1px solid #bbf7d0;
+  background-color: #f0fdf4;
+  border-radius: var(--raio-md);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tituloSucesso {
+  margin: 0;
+  color: var(--cor-sucesso);
+  font-size: 1.25rem;
+}
+
+.textoSucesso {
+  margin: 0;
+  color: var(--cor-texto-secundario);
+  font-size: 0.9375rem;
+}
+
+.resumoLista {
+  margin: 0;
+  background-color: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.resumoItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9375rem;
+}
+
+.resumoItem dt {
+  color: var(--cor-texto-secundario);
+  font-weight: 500;
+}
+
+.resumoItem dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .card {
+    padding: 1.25rem;
+  }
+
+  .passos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gradeCampos {
+    grid-template-columns: 1fr;
+  }
+}
