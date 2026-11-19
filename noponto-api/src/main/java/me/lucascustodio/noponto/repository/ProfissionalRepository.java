@@ -15,7 +15,11 @@ public interface ProfissionalRepository extends Repository<Profissional, UUID> {
 
     Profissional save(Profissional profissional);
 
+    Optional<Profissional> findByIdAndTenantId(UUID id, UUID tenantId);
+
     Optional<Profissional> findByIdAndTenantIdAndAtivoTrue(UUID id, UUID tenantId);
+
+    List<Profissional> findAllByTenantId(UUID tenantId);
 
     List<Profissional> findAllByTenantIdAndAtivoTrue(UUID tenantId);
 
