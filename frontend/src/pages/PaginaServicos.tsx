@@ -1,8 +1,10 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { BadgeAtivo } from '../components/BadgeAtivo';
 import {
   atualizarServico,
+  atualizarStatusServico,
   criarServico,
   listarProfissionais,
   listarServicos,
@@ -85,7 +87,32 @@ export function PaginaServicos() {
     setEditandoId(servico.id);
     setNome(servico.nome);
     setDuracaoMinutos(servico.duracaoMinutos);
-    setAtivo(true);
+    setAtivo(servico.ativo);
+  }
+
+  async function alterarStatus(servico: ServicoItemResponse, proximoAtivo: boolean) {
+    if (!proximoAtivo) {
+      const confirmado = window.confirm(
+        `Desativar ${servico.nome}? Os agendamentos já feitos permanecem no histórico.`,
+      );
+      if (!confirmado) {
+        return;
+      }
+    }
+
+    setSalvando(true);
+    setErro(null);
+    try {
+      await atualizarStatusServico(servico.id, proximoAtivo);
+      if (editandoId === servico.id) {
+        setAtivo(proximoAtivo);
+      }
+      await carregarServicos();
+    } catch (falha) {
+      setErro(extrairMensagemErro(falha, 'Não foi possível atualizar o status do serviço.'));
+    } finally {
+      setSalvando(false);
+    }
   }
 
   async function aoEnviar(evento: FormEvent) {
@@ -191,13 +218,6 @@ export function PaginaServicos() {
                 />
               </label>
 
-              {editandoId && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
-                  Ativo
-                </label>
-              )}
-
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="submit" disabled={salvando} className={estilos.botaoSecundario}>
                   {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Cadastrar'}
@@ -229,6 +249,7 @@ export function PaginaServicos() {
                     <tr>
                       <th>Nome</th>
                       <th>Duração</th>
+                      <th>Status</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -237,10 +258,21 @@ export function PaginaServicos() {
                       <tr key={s.id}>
                         <td>{s.nome}</td>
                         <td>{s.duracaoMinutos} min</td>
+                        <td><BadgeAtivo ativo={s.ativo} /></td>
                         <td>
-                          <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(s)}>
-                            Editar
-                          </button>
+                          <div className={estilos.grupoAcoes}>
+                            <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(s)}>
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className={s.ativo ? estilos.botaoAcaoPerigo : estilos.botaoAcaoPositivo}
+                              disabled={salvando}
+                              onClick={() => alterarStatus(s, !s.ativo)}
+                            >
+                              {s.ativo ? 'Desativar' : 'Reativar'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

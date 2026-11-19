@@ -44,12 +44,13 @@ public class AgendamentoService {
      * Cria o agendamento de forma transacional. Primeiro trava (SELECT FOR UPDATE) a linha do profissional,
      * o que serializa criações concorrentes para o mesmo profissional; só então recalcula se o slot ainda
      * está livre. Travar apenas linhas de agendamento não protegeria quando ainda não há nenhuma no horário.
+     * Profissional ou serviço inativo rejeita o novo agendamento sem alterar os já existentes.
      */
     @Transactional
     public AgendamentoResponse criar(CriarAgendamentoRequest request, UUID tenantId) {
         Profissional profissional = profissionalService.buscarAtivoComBloqueio(tenantId, request.profissionalId());
         ServicoItem servico = profissionalService
-                .buscarServicoAtivo(tenantId, profissional.getId(), request.servicoItemId());
+                .buscarServicoParaAgendamento(tenantId, profissional.getId(), request.servicoItemId());
 
         OffsetDateTime inicio = request.inicio().withOffsetSameInstant(ZoneOffset.UTC);
         if (!slotService.slotDisponivel(profissional.getId(), inicio, tenantId, servico.getId())) {

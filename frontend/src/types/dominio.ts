@@ -15,6 +15,7 @@ export interface ServicoItemResponse {
   id: string;
   nome: string;
   duracaoMinutos: number;
+  ativo?: boolean;
 }
 
 export interface CriarAgendamentoRequest {

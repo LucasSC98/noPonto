@@ -61,7 +61,7 @@ class AgendamentoServiceTest {
         servico.setId(SERVICO_ID);
         servico.setDuracaoMinutos(45);
         when(profissionalService.buscarAtivoComBloqueio(TENANT_ID, PROFISSIONAL_ID)).thenReturn(profissional);
-        when(profissionalService.buscarServicoAtivo(TENANT_ID, PROFISSIONAL_ID, SERVICO_ID)).thenReturn(servico);
+        when(profissionalService.buscarServicoParaAgendamento(TENANT_ID, PROFISSIONAL_ID, SERVICO_ID)).thenReturn(servico);
         when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(chamada -> chamada.getArgument(0));
     }
 
@@ -91,6 +91,29 @@ class AgendamentoServiceTest {
         assertThatThrownBy(() -> agendamentoService.criar(new CriarAgendamentoRequest(
                 PROFISSIONAL_ID, SERVICO_ID, "Maria", "maria@email.com", INICIO), TENANT_ID))
                 .isInstanceOf(HorarioIndisponivelExcecao.class);
+        verify(agendamentoRepository, never()).save(any());
+    }
+
+    @Test
+    void deve_lancarExcecao_quando_profissionalInativoNaoAceitaAgendamento() {
+        when(profissionalService.buscarAtivoComBloqueio(TENANT_ID, PROFISSIONAL_ID))
+                .thenThrow(new RegraNegocioExcecao("Profissional inativo não aceita novos agendamentos."));
+
+        assertThatThrownBy(() -> agendamentoService.criar(new CriarAgendamentoRequest(
+                PROFISSIONAL_ID, SERVICO_ID, "Maria", "maria@email.com", INICIO), TENANT_ID))
+                .isInstanceOf(RegraNegocioExcecao.class);
+        verify(agendamentoRepository, never()).save(any());
+        verify(slotService, never()).slotDisponivel(any(), any(), any(), any());
+    }
+
+    @Test
+    void deve_lancarExcecao_quando_servicoInativoNaoAceitaAgendamento() {
+        when(profissionalService.buscarServicoParaAgendamento(TENANT_ID, PROFISSIONAL_ID, SERVICO_ID))
+                .thenThrow(new RegraNegocioExcecao("Serviço inativo não aceita novos agendamentos."));
+
+        assertThatThrownBy(() -> agendamentoService.criar(new CriarAgendamentoRequest(
+                PROFISSIONAL_ID, SERVICO_ID, "Maria", "maria@email.com", INICIO), TENANT_ID))
+                .isInstanceOf(RegraNegocioExcecao.class);
         verify(agendamentoRepository, never()).save(any());
     }
 

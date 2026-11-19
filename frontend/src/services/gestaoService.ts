@@ -29,6 +29,11 @@ export async function criarProfissional(dados: CriarProfissionalRequest): Promis
   return resposta.data;
 }
 
+export async function atualizarStatusProfissional(id: string, ativo: boolean): Promise<ProfissionalResponse> {
+  const resposta = await api.patch<ProfissionalResponse>(`/professionals/${id}/status`, { ativo });
+  return resposta.data;
+}
+
 export async function atualizarProfissional(
   id: string,
   dados: AtualizarProfissionalRequest,
@@ -50,6 +55,11 @@ export async function listarServicos(
 
 export async function criarServico(dados: CriarServicoItemRequest): Promise<ServicoItemResponse> {
   const resposta = await api.post<ServicoItemResponse>('/servicos', dados);
+  return resposta.data;
+}
+
+export async function atualizarStatusServico(id: string, ativo: boolean): Promise<ServicoItemResponse> {
+  const resposta = await api.patch<ServicoItemResponse>(`/services/${id}/status`, { ativo });
   return resposta.data;
 }
 

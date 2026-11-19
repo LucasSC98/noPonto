@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { BadgeAtivo } from '../components/BadgeAtivo';
 import {
   atualizarProfissional,
+  atualizarStatusProfissional,
   criarProfissional,
   listarProfissionais,
   obterTenantAtual,
@@ -65,6 +67,31 @@ export function PaginaProfissionais() {
       }, 2000);
     } catch {
       setErro('Não foi possível copiar o link de agendamento.');
+    }
+  }
+
+  async function alterarStatus(profissional: ProfissionalResponse, ativo: boolean) {
+    if (!ativo) {
+      const confirmado = window.confirm(
+        `Desativar ${profissional.nome}? Os agendamentos já feitos permanecem no histórico.`,
+      );
+      if (!confirmado) {
+        return;
+      }
+    }
+
+    setSalvando(true);
+    setErro(null);
+    try {
+      await atualizarStatusProfissional(profissional.id, ativo);
+      if (editandoId === profissional.id) {
+        setAtivo(ativo);
+      }
+      await carregar();
+    } catch (falha) {
+      setErro(extrairMensagemErro(falha, 'Não foi possível atualizar o status do profissional.'));
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -154,13 +181,6 @@ export function PaginaProfissionais() {
               />
             </label>
 
-            {editandoId && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
-                Ativo
-              </label>
-            )}
-
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="submit" disabled={salvando} className={estilos.botaoSecundario}>
                 {salvando ? 'Salvando...' : editandoId ? 'Atualizar' : 'Cadastrar'}
@@ -199,7 +219,7 @@ export function PaginaProfissionais() {
                     <tr key={p.id}>
                       <td>{p.nome}</td>
                       <td>{p.email || '—'}</td>
-                      <td>{p.ativo ? 'Ativo' : 'Inativo'}</td>
+                      <td><BadgeAtivo ativo={p.ativo} /></td>
                       <td>
                         <div className={estilos.grupoAcoes}>
                           <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(p)}>
@@ -211,6 +231,14 @@ export function PaginaProfissionais() {
                             onClick={() => navegar(`/profissionais/${p.id}/disponibilidade`)}
                           >
                             Horários
+                          </button>
+                          <button
+                            type="button"
+                            className={p.ativo ? estilos.botaoAcaoPerigo : estilos.botaoAcaoPositivo}
+                            disabled={salvando}
+                            onClick={() => alterarStatus(p, !p.ativo)}
+                          >
+                            {p.ativo ? 'Desativar' : 'Reativar'}
                           </button>
                           <button
                             type="button"

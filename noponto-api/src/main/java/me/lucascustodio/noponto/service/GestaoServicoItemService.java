@@ -59,4 +59,12 @@ public class GestaoServicoItemService {
 
         return ServicoItemResponse.de(servicoItemRepository.save(servico));
     }
+
+    @Transactional
+    public ServicoItemResponse atualizarAtivo(UUID id, boolean ativo, UUID tenantId) {
+        ServicoItem servico = servicoItemRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Serviço não encontrado."));
+        servico.setAtivo(ativo);
+        return ServicoItemResponse.de(servicoItemRepository.save(servico));
+    }
 }

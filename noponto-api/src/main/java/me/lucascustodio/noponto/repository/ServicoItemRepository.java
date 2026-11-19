@@ -15,6 +15,8 @@ public interface ServicoItemRepository extends Repository<ServicoItem, UUID> {
 
     Optional<ServicoItem> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    Optional<ServicoItem> findByIdAndTenantIdAndProfissionalId(UUID id, UUID tenantId, UUID profissionalId);
+
     Optional<ServicoItem> findByIdAndTenantIdAndProfissionalIdAndAtivoTrue(UUID id, UUID tenantId, UUID profissionalId);
 
     List<ServicoItem> findAllByTenantIdAndProfissionalIdAndAtivoTrue(UUID tenantId, UUID profissionalId);

@@ -194,6 +194,28 @@ class SlotServiceTest {
     }
 
     @Test
+    void deve_naoGerarSlots_quando_profissionalInativo() {
+        when(profissionalService.buscarAtivo(TENANT_ID, PROFISSIONAL_ID))
+                .thenThrow(new RecursoNaoEncontradoExcecao("Profissional não encontrado."));
+
+        assertThatThrownBy(() -> criarServico("2026-11-18T12:00:00Z")
+                .calcularSlotsDisponiveis(PROFISSIONAL_ID, DATA, TENANT_ID, SERVICO_ID))
+                .isInstanceOf(RecursoNaoEncontradoExcecao.class);
+        verifyNoInteractions(regraRepository);
+    }
+
+    @Test
+    void deve_naoGerarSlots_quando_servicoInativo() {
+        when(profissionalService.buscarServicoAtivo(TENANT_ID, PROFISSIONAL_ID, SERVICO_ID))
+                .thenThrow(new RecursoNaoEncontradoExcecao("Serviço não encontrado para o profissional."));
+
+        assertThatThrownBy(() -> criarServico("2026-11-18T12:00:00Z")
+                .calcularSlotsDisponiveis(PROFISSIONAL_ID, DATA, TENANT_ID, SERVICO_ID))
+                .isInstanceOf(RecursoNaoEncontradoExcecao.class);
+        verifyNoInteractions(regraRepository);
+    }
+
+    @Test
     void deve_lancarExcecao_quando_profissionalInativoOuInexistente() {
         when(profissionalService.buscarAtivo(TENANT_ID, PROFISSIONAL_ID))
                 .thenThrow(new RecursoNaoEncontradoExcecao("Profissional não encontrado."));

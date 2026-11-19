@@ -32,4 +32,8 @@ public interface ProfissionalRepository extends Repository<Profissional, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Profissional p where p.id = :id and p.tenantId = :tenantId and p.ativo = true")
     Optional<Profissional> buscarAtivoComBloqueio(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Profissional p where p.id = :id and p.tenantId = :tenantId")
+    Optional<Profissional> buscarComBloqueio(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
 }

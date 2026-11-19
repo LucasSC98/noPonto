@@ -1,6 +1,7 @@
 package me.lucascustodio.noponto.controller;
 
 import jakarta.validation.Valid;
+import me.lucascustodio.noponto.dto.AtualizarAtivoRequest;
 import me.lucascustodio.noponto.dto.AtualizarProfissionalRequest;
 import me.lucascustodio.noponto.dto.AtualizarRegraDisponibilidadeRequest;
 import me.lucascustodio.noponto.dto.AtualizarServicoItemRequest;
@@ -21,6 +22,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -66,6 +68,12 @@ public class GestaoController {
         return gestaoProfissionalService.atualizar(id, requisicao, TenantContextHolder.get());
     }
 
+    @PatchMapping("/professionals/{id}/status")
+    public ProfissionalResponse atualizarStatusProfissional(@PathVariable UUID id,
+                                                            @Valid @RequestBody AtualizarAtivoRequest requisicao) {
+        return gestaoProfissionalService.atualizarAtivo(id, requisicao.ativo(), TenantContextHolder.get());
+    }
+
     // --- Serviços ---
 
     @GetMapping("/servicos")
@@ -84,6 +92,12 @@ public class GestaoController {
     public ServicoItemResponse atualizarServico(@PathVariable UUID id,
                                                  @Valid @RequestBody AtualizarServicoItemRequest requisicao) {
         return gestaoServicoItemService.atualizar(id, requisicao, TenantContextHolder.get());
+    }
+
+    @PatchMapping("/services/{id}/status")
+    public ServicoItemResponse atualizarStatusServico(@PathVariable UUID id,
+                                                      @Valid @RequestBody AtualizarAtivoRequest requisicao) {
+        return gestaoServicoItemService.atualizarAtivo(id, requisicao.ativo(), TenantContextHolder.get());
     }
 
     // --- Regras de disponibilidade ---

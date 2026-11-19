@@ -50,4 +50,12 @@ public class GestaoProfissionalService {
 
         return ProfissionalResponse.de(profissionalRepository.save(profissional));
     }
+
+    @Transactional
+    public ProfissionalResponse atualizarAtivo(UUID id, boolean ativo, UUID tenantId) {
+        Profissional profissional = profissionalRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Profissional não encontrado."));
+        profissional.setAtivo(ativo);
+        return ProfissionalResponse.de(profissionalRepository.save(profissional));
+    }
 }

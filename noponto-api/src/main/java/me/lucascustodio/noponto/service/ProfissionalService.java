@@ -4,6 +4,7 @@ import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.ServicoItem;
 import me.lucascustodio.noponto.dto.ServicoItemResponse;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
+import me.lucascustodio.noponto.exception.RegraNegocioExcecao;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import me.lucascustodio.noponto.repository.ServicoItemRepository;
 import org.springframework.stereotype.Service;
@@ -32,13 +33,28 @@ public class ProfissionalService {
     }
 
     /**
-     * Igual a {@link #buscarAtivo}, mas com SELECT FOR UPDATE na linha do profissional.
-     * Deve ser chamado dentro de uma transação de escrita.
+     * SELECT FOR UPDATE na linha do profissional, dentro de uma transação de escrita.
+     * Recusa novo agendamento quando o profissional está inativo, sem alterar os já existentes.
      */
     @Transactional
     public Profissional buscarAtivoComBloqueio(UUID tenantId, UUID profissionalId) {
-        return profissionalRepository.buscarAtivoComBloqueio(profissionalId, tenantId)
+        Profissional profissional = profissionalRepository.buscarComBloqueio(profissionalId, tenantId)
                 .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Profissional não encontrado."));
+        if (!Boolean.TRUE.equals(profissional.getAtivo())) {
+            throw new RegraNegocioExcecao("Profissional inativo não aceita novos agendamentos.");
+        }
+        return profissional;
+    }
+
+    @Transactional(readOnly = true)
+    public ServicoItem buscarServicoParaAgendamento(UUID tenantId, UUID profissionalId, UUID servicoItemId) {
+        ServicoItem servico = servicoItemRepository
+                .findByIdAndTenantIdAndProfissionalId(servicoItemId, tenantId, profissionalId)
+                .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Serviço não encontrado para o profissional."));
+        if (!Boolean.TRUE.equals(servico.getAtivo())) {
+            throw new RegraNegocioExcecao("Serviço inativo não aceita novos agendamentos.");
+        }
+        return servico;
     }
 
     @Transactional(readOnly = true)
