@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: noponto
+  profiles:
+    active: dev
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/noponto_db}
     username: ${SPRING_DATASOURCE_USERNAME:noponto}
@@ -30,3 +32,10 @@ noponto:
     # Em produção, defina NOPONTO_JWT_SEGREDO com no mínimo 32 bytes aleatórios
     segredo: ${NOPONTO_JWT_SEGREDO:noponto-dev-segredo-jwt-trocar-em-producao-0123456789}
     expiracao-minutos: ${NOPONTO_JWT_EXPIRACAO_MINUTOS:480}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+

@@ -10,6 +10,8 @@ public interface TenantRepository extends Repository<Tenant, UUID> {
 
     Tenant save(Tenant tenant);
 
+    long count();
+
     Optional<Tenant> findByIdAndAtivoTrue(UUID id);
 
     Optional<Tenant> findBySubdominioIgnoreCaseAndAtivoTrue(String subdominio);
