@@ -179,9 +179,18 @@ export function PaginaProfissionais() {
                       <td>{p.email || '—'}</td>
                       <td>{p.ativo ? 'Ativo' : 'Inativo'}</td>
                       <td>
-                        <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(p)}>
-                          Editar
-                        </button>
+                        <div className={estilos.grupoAcoes}>
+                          <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(p)}>
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className={estilos.botaoAcaoPositivo}
+                            onClick={() => navegar(`/profissionais/${p.id}/disponibilidade`)}
+                          >
+                            Horários
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

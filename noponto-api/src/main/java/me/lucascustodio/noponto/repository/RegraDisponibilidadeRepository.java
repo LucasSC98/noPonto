@@ -14,10 +14,19 @@ public interface RegraDisponibilidadeRepository extends Repository<RegraDisponib
 
     RegraDisponibilidade save(RegraDisponibilidade regra);
 
+    void delete(RegraDisponibilidade regra);
+
     Optional<RegraDisponibilidade> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    Optional<RegraDisponibilidade> findByIdAndTenantIdAndProfissionalId(UUID id, UUID tenantId, UUID profissionalId);
 
     List<RegraDisponibilidade> findAllByTenantIdAndProfissionalIdAndDiaSemanaAndAtivoTrue(
             UUID tenantId, UUID profissionalId, DayOfWeek diaSemana);
+
+    List<RegraDisponibilidade> findAllByTenantIdAndProfissionalIdAndDiaSemana(
+            UUID tenantId, UUID profissionalId, DayOfWeek diaSemana);
+
+    List<RegraDisponibilidade> findAllByTenantIdAndProfissionalId(UUID tenantId, UUID profissionalId);
 
     Page<RegraDisponibilidade> findAllByTenantIdAndProfissionalId(UUID tenantId, UUID profissionalId, Pageable pageable);
 }

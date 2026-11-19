@@ -9,6 +9,7 @@ import me.lucascustodio.noponto.dto.CriarRegraDisponibilidadeRequest;
 import me.lucascustodio.noponto.dto.CriarServicoItemRequest;
 import me.lucascustodio.noponto.dto.ProfissionalResponse;
 import me.lucascustodio.noponto.dto.RegraDisponibilidadeResponse;
+import me.lucascustodio.noponto.dto.SalvarRegraDisponibilidadeRequest;
 import me.lucascustodio.noponto.dto.ServicoItemResponse;
 import me.lucascustodio.noponto.service.GestaoProfissionalService;
 import me.lucascustodio.noponto.service.GestaoRegraDisponibilidadeService;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -101,5 +104,31 @@ public class GestaoController {
     public RegraDisponibilidadeResponse atualizarRegra(@PathVariable UUID id,
                                                         @Valid @RequestBody AtualizarRegraDisponibilidadeRequest requisicao) {
         return gestaoRegraDisponibilidadeService.atualizar(id, requisicao, TenantContextHolder.get());
+    }
+
+    @GetMapping("/professionals/{id}/availability-rules")
+    public List<RegraDisponibilidadeResponse> listarRegrasDoProfissional(@PathVariable UUID id) {
+        return gestaoRegraDisponibilidadeService.listarDoProfissional(TenantContextHolder.get(), id);
+    }
+
+    @PostMapping("/professionals/{id}/availability-rules")
+    @ResponseStatus(HttpStatus.CREATED)
+    public RegraDisponibilidadeResponse criarRegraDoProfissional(@PathVariable UUID id,
+                                                                 @Valid @RequestBody SalvarRegraDisponibilidadeRequest requisicao) {
+        return gestaoRegraDisponibilidadeService.criarParaProfissional(id, requisicao, TenantContextHolder.get());
+    }
+
+    @PutMapping("/professionals/{id}/availability-rules/{regraId}")
+    public RegraDisponibilidadeResponse atualizarRegraDoProfissional(@PathVariable UUID id,
+                                                                     @PathVariable UUID regraId,
+                                                                     @Valid @RequestBody SalvarRegraDisponibilidadeRequest requisicao) {
+        return gestaoRegraDisponibilidadeService.atualizarParaProfissional(
+                id, regraId, requisicao, TenantContextHolder.get());
+    }
+
+    @DeleteMapping("/professionals/{id}/availability-rules/{regraId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirRegraDoProfissional(@PathVariable UUID id, @PathVariable UUID regraId) {
+        gestaoRegraDisponibilidadeService.excluir(id, regraId, TenantContextHolder.get());
     }
 }

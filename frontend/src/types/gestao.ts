@@ -45,17 +45,17 @@ export interface RegraDisponibilidadeResponse {
   ativo: boolean;
 }
 
-export interface CriarRegraDisponibilidadeRequest {
-  profissionalId: string;
+export interface SalvarRegraDisponibilidadeRequest {
   diaSemana: DiaSemana;
   horaInicio: string;
   horaFim: string;
 }
 
-export interface AtualizarRegraDisponibilidadeRequest {
-  diaSemana: DiaSemana;
-  horaInicio: string;
-  horaFim: string;
+export interface CriarRegraDisponibilidadeRequest extends SalvarRegraDisponibilidadeRequest {
+  profissionalId: string;
+}
+
+export interface AtualizarRegraDisponibilidadeRequest extends SalvarRegraDisponibilidadeRequest {
   ativo: boolean;
 }
 

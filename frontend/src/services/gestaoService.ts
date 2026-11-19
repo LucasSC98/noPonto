@@ -1,14 +1,13 @@
 import { api } from './api';
 import type {
   AtualizarProfissionalRequest,
-  AtualizarRegraDisponibilidadeRequest,
   AtualizarServicoItemRequest,
   CriarProfissionalRequest,
-  CriarRegraDisponibilidadeRequest,
   CriarServicoItemRequest,
   Pagina,
   ProfissionalResponse,
   RegraDisponibilidadeResponse,
+  SalvarRegraDisponibilidadeRequest,
   ServicoItemResponse,
 } from '../types/gestao';
 
@@ -56,28 +55,36 @@ export async function atualizarServico(
   return resposta.data;
 }
 
-export async function listarRegras(
-  profissionalId: string,
-  page = 0,
-  size = 20,
-): Promise<Pagina<RegraDisponibilidadeResponse>> {
-  const resposta = await api.get<Pagina<RegraDisponibilidadeResponse>>('/regras-disponibilidade', {
-    params: { profissionalId, page, size, sort: 'diaSemana,asc' },
-  });
+export async function listarRegras(profissionalId: string): Promise<RegraDisponibilidadeResponse[]> {
+  const resposta = await api.get<RegraDisponibilidadeResponse[]>(
+    `/professionals/${profissionalId}/availability-rules`,
+  );
   return resposta.data;
 }
 
 export async function criarRegra(
-  dados: CriarRegraDisponibilidadeRequest,
+  profissionalId: string,
+  dados: SalvarRegraDisponibilidadeRequest,
 ): Promise<RegraDisponibilidadeResponse> {
-  const resposta = await api.post<RegraDisponibilidadeResponse>('/regras-disponibilidade', dados);
+  const resposta = await api.post<RegraDisponibilidadeResponse>(
+    `/professionals/${profissionalId}/availability-rules`,
+    dados,
+  );
   return resposta.data;
 }
 
 export async function atualizarRegra(
-  id: string,
-  dados: AtualizarRegraDisponibilidadeRequest,
+  profissionalId: string,
+  regraId: string,
+  dados: SalvarRegraDisponibilidadeRequest,
 ): Promise<RegraDisponibilidadeResponse> {
-  const resposta = await api.put<RegraDisponibilidadeResponse>(`/regras-disponibilidade/${id}`, dados);
+  const resposta = await api.put<RegraDisponibilidadeResponse>(
+    `/professionals/${profissionalId}/availability-rules/${regraId}`,
+    dados,
+  );
   return resposta.data;
+}
+
+export async function removerRegra(profissionalId: string, regraId: string): Promise<void> {
+  await api.delete(`/professionals/${profissionalId}/availability-rules/${regraId}`);
 }
