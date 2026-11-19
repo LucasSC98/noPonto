@@ -149,6 +149,13 @@ export function PaginaDashboard() {
             <button
               type="button"
               className={estilos.botaoSecundario}
+              onClick={() => navegar('/profissionais')}
+            >
+              Profissionais
+            </button>
+            <button
+              type="button"
+              className={estilos.botaoSecundario}
               onClick={carregar}
               disabled={carregando}
             >
