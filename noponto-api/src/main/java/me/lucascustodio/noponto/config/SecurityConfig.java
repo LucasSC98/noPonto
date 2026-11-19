@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(rotas -> rotas
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/public/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/public/agendamentos").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(excecoes -> excecoes
