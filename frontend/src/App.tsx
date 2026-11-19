@@ -3,6 +3,7 @@ import { PaginaAgendamentoPublico } from './pages/PaginaAgendamentoPublico';
 import { PaginaDashboard } from './pages/PaginaDashboard';
 import { PaginaLogin } from './pages/PaginaLogin';
 import { PaginaProfissionais } from './pages/PaginaProfissionais';
+import { PaginaServicos } from './pages/PaginaServicos';
 import { PrivateRoute } from './routes/PrivateRoute';
 
 export function App() {
@@ -23,6 +24,14 @@ export function App() {
         element={
           <PrivateRoute>
             <PaginaProfissionais />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/servicos"
+        element={
+          <PrivateRoute>
+            <PaginaServicos />
           </PrivateRoute>
         }
       />
