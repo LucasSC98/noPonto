@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -32,34 +33,55 @@ class GestaoProfissionalServiceTest {
 
     private ProfissionalRepository profissionalRepository;
     private GestaoRegraDisponibilidadeService regraDisponibilidadeService;
+    private GestaoServicoItemService servicoItemService;
+    private AgendamentoConsultaService agendamentoConsultaService;
     private GestaoProfissionalService service;
 
     @BeforeEach
     void configurar() {
         profissionalRepository = mock(ProfissionalRepository.class);
         regraDisponibilidadeService = mock(GestaoRegraDisponibilidadeService.class);
-        service = new GestaoProfissionalService(profissionalRepository, regraDisponibilidadeService);
+        servicoItemService = mock(GestaoServicoItemService.class);
+        agendamentoConsultaService = mock(AgendamentoConsultaService.class);
+        service = new GestaoProfissionalService(
+                profissionalRepository,
+                regraDisponibilidadeService,
+                servicoItemService,
+                agendamentoConsultaService);
         when(profissionalRepository.save(any(Profissional.class))).thenAnswer(chamada -> chamada.getArgument(0));
         when(regraDisponibilidadeService.buscarProfissionaisComDisponibilidade(eq(TENANT_ID), anyCollection()))
                 .thenReturn(Set.of());
+        when(servicoItemService.contarAtivosPorProfissional(eq(TENANT_ID), anyCollection()))
+                .thenReturn(Map.of());
+        when(agendamentoConsultaService.contarAgendamentosSemanaPorProfissional(eq(TENANT_ID), anyCollection()))
+                .thenReturn(Map.of());
     }
 
     @Test
-    void deve_indicarDisponibilidadeNaListagem_quando_profissionaisComESemRegras() {
-        Profissional comRegra = profissional(UUID.randomUUID(), "Dr. João");
-        Profissional semRegra = profissional(UUID.randomUUID(), "Dra. Maria");
+    void deve_montarResumoEDisponibilidadeNaListagem_quando_profissionaisComESemDados() {
+        Profissional comDados = profissional(UUID.randomUUID(), "Dr. João");
+        Profissional semDados = profissional(UUID.randomUUID(), "Dra. Maria");
         PageRequest pageable = PageRequest.of(0, 20);
+        List<UUID> ids = List.of(comDados.getId(), semDados.getId());
         when(profissionalRepository.findAllByTenantId(TENANT_ID, pageable))
-                .thenReturn(new PageImpl<>(List.of(comRegra, semRegra)));
-        when(regraDisponibilidadeService.buscarProfissionaisComDisponibilidade(
-                TENANT_ID, List.of(comRegra.getId(), semRegra.getId())))
-                .thenReturn(Set.of(comRegra.getId()));
+                .thenReturn(new PageImpl<>(List.of(comDados, semDados)));
+        when(regraDisponibilidadeService.buscarProfissionaisComDisponibilidade(TENANT_ID, ids))
+                .thenReturn(Set.of(comDados.getId()));
+        when(servicoItemService.contarAtivosPorProfissional(TENANT_ID, ids))
+                .thenReturn(Map.of(comDados.getId(), 3L));
+        when(agendamentoConsultaService.contarAgendamentosSemanaPorProfissional(TENANT_ID, ids))
+                .thenReturn(Map.of(comDados.getId(), 5L));
 
         Page<ProfissionalResponse> resultado = service.listar(TENANT_ID, pageable);
 
-        assertThat(resultado.getContent()).hasSize(2);
-        assertThat(resultado.getContent().get(0).temDisponibilidade()).isTrue();
-        assertThat(resultado.getContent().get(1).temDisponibilidade()).isFalse();
+        ProfissionalResponse primeiro = resultado.getContent().get(0);
+        ProfissionalResponse segundo = resultado.getContent().get(1);
+        assertThat(primeiro.temDisponibilidade()).isTrue();
+        assertThat(primeiro.quantidadeServicosAtivos()).isEqualTo(3L);
+        assertThat(primeiro.agendamentosSemana()).isEqualTo(5L);
+        assertThat(segundo.temDisponibilidade()).isFalse();
+        assertThat(segundo.quantidadeServicosAtivos()).isZero();
+        assertThat(segundo.agendamentosSemana()).isZero();
     }
 
     @Test

@@ -9,20 +9,27 @@ public record ProfissionalResponse(
         String nome,
         String email,
         Boolean ativo,
-        boolean temDisponibilidade
+        boolean temDisponibilidade,
+        long quantidadeServicosAtivos,
+        long agendamentosSemana
 ) {
 
     public static ProfissionalResponse de(Profissional profissional) {
-        return de(profissional, false);
+        return de(profissional, false, 0L, 0L);
     }
 
-    public static ProfissionalResponse de(Profissional profissional, boolean temDisponibilidade) {
+    public static ProfissionalResponse de(Profissional profissional,
+                                          boolean temDisponibilidade,
+                                          long quantidadeServicosAtivos,
+                                          long agendamentosSemana) {
         return new ProfissionalResponse(
                 profissional.getId(),
                 profissional.getNome(),
                 profissional.getEmail(),
                 profissional.getAtivo(),
-                temDisponibilidade
+                temDisponibilidade,
+                quantidadeServicosAtivos,
+                agendamentosSemana
         );
     }
 }

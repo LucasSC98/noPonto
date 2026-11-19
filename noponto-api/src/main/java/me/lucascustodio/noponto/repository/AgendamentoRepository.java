@@ -7,6 +7,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,4 +35,22 @@ public interface AgendamentoRepository extends Repository<Agendamento, UUID> {
                                           @Param("status") List<StatusAgendamento> status,
                                           @Param("inicio") OffsetDateTime inicio,
                                           @Param("fim") OffsetDateTime fim);
+
+    /** Conta agendamentos nos status informados com início dentro de {@code [inicioPeriodo, fimPeriodo)}. */
+    @Query("""
+            select new me.lucascustodio.noponto.repository.ContagemPorProfissional(a.profissional.id, count(a))
+            from Agendamento a
+            where a.tenantId = :tenantId
+              and a.profissional.id in :profissionalIds
+              and a.status in :status
+              and a.inicio >= :inicioPeriodo
+              and a.inicio < :fimPeriodo
+            group by a.profissional.id
+            """)
+    List<ContagemPorProfissional> contarPorProfissionalNoPeriodo(
+            @Param("tenantId") UUID tenantId,
+            @Param("profissionalIds") Collection<UUID> profissionalIds,
+            @Param("status") List<StatusAgendamento> status,
+            @Param("inicioPeriodo") OffsetDateTime inicioPeriodo,
+            @Param("fimPeriodo") OffsetDateTime fimPeriodo);
 }

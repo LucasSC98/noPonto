@@ -212,6 +212,12 @@ export function PaginaProfissionais() {
                         <div>
                           <strong className={estilos.nomeItem}>{profissional.nome}</strong>
                           <span className={estilos.subItem}>{profissional.email || 'Sem e-mail'}</span>
+                          <span className={estilos.subItem}>
+                            {formatarResumoProfissional(
+                              profissional.quantidadeServicosAtivos,
+                              profissional.agendamentosSemana,
+                            )}
+                          </span>
                         </div>
                         <div className={estilos.badgesTopo}>
                           {!profissional.temDisponibilidade && (
@@ -272,6 +278,16 @@ export function PaginaProfissionais() {
       </main>
     </div>
   );
+}
+
+function formatarResumoProfissional(servicosAtivos: number, agendamentosSemana: number): string {
+  const textoServicos =
+    servicosAtivos === 1 ? '1 serviço ativo' : `${servicosAtivos} serviços ativos`;
+  const textoAgendamentos =
+    agendamentosSemana === 1
+      ? '1 agendamento esta semana'
+      : `${agendamentosSemana} agendamentos esta semana`;
+  return `${textoServicos} · ${textoAgendamentos}`;
 }
 
 function iniciais(nome: string): string {

@@ -4,6 +4,8 @@ export interface ProfissionalResponse {
   email: string | null;
   ativo: boolean;
   temDisponibilidade: boolean;
+  quantidadeServicosAtivos: number;
+  agendamentosSemana: number;
 }
 
 export interface CriarProfissionalRequest {

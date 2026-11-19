@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -20,21 +21,39 @@ public class GestaoProfissionalService {
 
     private final ProfissionalRepository profissionalRepository;
     private final GestaoRegraDisponibilidadeService regraDisponibilidadeService;
+    private final GestaoServicoItemService servicoItemService;
+    private final AgendamentoConsultaService agendamentoConsultaService;
 
     public GestaoProfissionalService(ProfissionalRepository profissionalRepository,
-                                     GestaoRegraDisponibilidadeService regraDisponibilidadeService) {
+                                     GestaoRegraDisponibilidadeService regraDisponibilidadeService,
+                                     GestaoServicoItemService servicoItemService,
+                                     AgendamentoConsultaService agendamentoConsultaService) {
         this.profissionalRepository = profissionalRepository;
         this.regraDisponibilidadeService = regraDisponibilidadeService;
+        this.servicoItemService = servicoItemService;
+        this.agendamentoConsultaService = agendamentoConsultaService;
     }
 
     @Transactional(readOnly = true)
     public Page<ProfissionalResponse> listar(UUID tenantId, Pageable pageable) {
         Page<Profissional> pagina = profissionalRepository.findAllByTenantId(tenantId, pageable);
         List<UUID> ids = pagina.getContent().stream().map(Profissional::getId).toList();
-        Set<UUID> comDisponibilidade = regraDisponibilidadeService.buscarProfissionaisComDisponibilidade(tenantId, ids);
+        if (ids.isEmpty()) {
+            return pagina.map(ProfissionalResponse::de);
+        }
 
-        return pagina.map(profissional ->
-                ProfissionalResponse.de(profissional, comDisponibilidade.contains(profissional.getId())));
+        Set<UUID> comDisponibilidade = regraDisponibilidadeService
+                .buscarProfissionaisComDisponibilidade(tenantId, ids);
+        Map<UUID, Long> servicosAtivos = servicoItemService.contarAtivosPorProfissional(tenantId, ids);
+        Map<UUID, Long> agendamentosSemana = agendamentoConsultaService
+                .contarAgendamentosSemanaPorProfissional(tenantId, ids);
+
+        return pagina.map(profissional -> ProfissionalResponse.de(
+                profissional,
+                comDisponibilidade.contains(profissional.getId()),
+                servicosAtivos.getOrDefault(profissional.getId(), 0L),
+                agendamentosSemana.getOrDefault(profissional.getId(), 0L)
+        ));
     }
 
     @Transactional
@@ -45,7 +64,7 @@ public class GestaoProfissionalService {
         profissional.setEmail(requisicao.email());
         profissional.setAtivo(true);
 
-        return ProfissionalResponse.de(profissionalRepository.save(profissional), false);
+        return ProfissionalResponse.de(profissionalRepository.save(profissional), false, 0L, 0L);
     }
 
     @Transactional
@@ -57,11 +76,7 @@ public class GestaoProfissionalService {
         profissional.setEmail(requisicao.email());
         profissional.setAtivo(requisicao.ativo());
 
-        Profissional salvo = profissionalRepository.save(profissional);
-        boolean temDisponibilidade = regraDisponibilidadeService
-                .buscarProfissionaisComDisponibilidade(tenantId, List.of(salvo.getId()))
-                .contains(salvo.getId());
-        return ProfissionalResponse.de(salvo, temDisponibilidade);
+        return montarResposta(profissionalRepository.save(profissional), tenantId);
     }
 
     @Transactional
@@ -70,10 +85,20 @@ public class GestaoProfissionalService {
                 .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Profissional não encontrado."));
         profissional.setAtivo(ativo);
 
-        Profissional salvo = profissionalRepository.save(profissional);
+        return montarResposta(profissionalRepository.save(profissional), tenantId);
+    }
+
+    private ProfissionalResponse montarResposta(Profissional profissional, UUID tenantId) {
+        List<UUID> ids = List.of(profissional.getId());
         boolean temDisponibilidade = regraDisponibilidadeService
-                .buscarProfissionaisComDisponibilidade(tenantId, List.of(salvo.getId()))
-                .contains(salvo.getId());
-        return ProfissionalResponse.de(salvo, temDisponibilidade);
+                .buscarProfissionaisComDisponibilidade(tenantId, ids)
+                .contains(profissional.getId());
+        long servicosAtivos = servicoItemService.contarAtivosPorProfissional(tenantId, ids)
+                .getOrDefault(profissional.getId(), 0L);
+        long agendamentosSemana = agendamentoConsultaService
+                .contarAgendamentosSemanaPorProfissional(tenantId, ids)
+                .getOrDefault(profissional.getId(), 0L);
+
+        return ProfissionalResponse.de(profissional, temDisponibilidade, servicosAtivos, agendamentosSemana);
     }
 }
