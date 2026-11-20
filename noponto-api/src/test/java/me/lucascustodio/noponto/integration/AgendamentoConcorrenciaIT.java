@@ -8,6 +8,7 @@ import me.lucascustodio.noponto.domain.ServicoItem;
 import me.lucascustodio.noponto.domain.StatusAgendamento;
 import me.lucascustodio.noponto.domain.Tenant;
 import me.lucascustodio.noponto.dto.CriarAgendamentoRequest;
+import me.lucascustodio.noponto.dto.RemarcarAgendamentoRequest;
 import me.lucascustodio.noponto.exception.HorarioIndisponivelExcecao;
 import me.lucascustodio.noponto.repository.AgendamentoRepository;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
@@ -218,6 +219,98 @@ class AgendamentoConcorrenciaIT {
         assertThat(resultado.conflitosHorario()).isZero();
         assertThat(salvosA).hasSize(1);
         assertThat(salvosB).hasSize(1);
+    }
+
+    @Test
+    void deve_permitirApenasUmaRemarcacao_quando_dezThreadsRemarcamAgendamentosDiferentesParaMesmoHorarioLivre()
+            throws InterruptedException {
+        CenarioBase cenario = criarCenarioBase("remarcacao-dez");
+        OffsetDateTime horarioBase = OffsetDateTime.of(cenario.data(), LocalTime.of(9, 0), ZoneOffset.UTC);
+        OffsetDateTime horarioDestinoLivre = OffsetDateTime.of(cenario.data(), LocalTime.of(15, 0), ZoneOffset.UTC);
+
+        List<String> tokens = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            OffsetDateTime horarioInicial = horarioBase.plusMinutes(30L * i);
+            AgendamentoService.AgendamentoCriadoComToken criado = agendamentoService.criarComToken(
+                    new CriarAgendamentoRequest(
+                            cenario.profissionalId(),
+                            cenario.servico30MinId(),
+                            "Cliente Remarcação " + i,
+                            "remarcacao" + i + "@teste.com",
+                            horarioInicial),
+                    cenario.tenantId());
+            tokens.add(criado.tokenPuro());
+        }
+
+        List<Runnable> tarefas = new ArrayList<>();
+        for (String token : tokens) {
+            tarefas.add(() -> agendamentoService.remarcarPorToken(
+                    token, new RemarcarAgendamentoRequest(horarioDestinoLivre)));
+        }
+
+        ResultadoConcorrencia resultado = executarConcorrente(tarefas);
+        List<Agendamento> salvos = agendamentoRepository.findAllByTenantIdOrderByInicioAsc(cenario.tenantId());
+        long noHorarioDestino = salvos.stream()
+                .filter(a -> a.getInicio().toInstant().equals(horarioDestinoLivre.toInstant()))
+                .count();
+        long marcadosComoRemarcado = salvos.stream()
+                .filter(a -> Boolean.TRUE.equals(a.getRemarcado()))
+                .count();
+
+        log.info("Cenário E (10 remarcações para mesmo slot) -> threads={}, sucessos={}, conflitos={}, errosInesperados={}, noDestino={}",
+                tarefas.size(), resultado.sucessos(), resultado.conflitosHorario(),
+                resultado.errosInesperados().size(), noHorarioDestino);
+
+        assertThat(resultado.errosInesperados()).isEmpty();
+        assertThat(resultado.sucessos()).isEqualTo(1);
+        assertThat(resultado.conflitosHorario()).isEqualTo(9);
+        assertThat(salvos).hasSize(10);
+        assertThat(noHorarioDestino).isEqualTo(1);
+        assertThat(marcadosComoRemarcado).isEqualTo(1);
+    }
+
+    @Test
+    void deve_permitirApenasUmGanhador_quando_remarcacaoConcorreComNovaCriacaoNoMesmoHorario()
+            throws InterruptedException {
+        CenarioBase cenario = criarCenarioBase("remarcacao-vs-criacao");
+        OffsetDateTime horarioInicial = OffsetDateTime.of(cenario.data(), LocalTime.of(9, 0), ZoneOffset.UTC);
+        OffsetDateTime horarioDisputado = OffsetDateTime.of(cenario.data(), LocalTime.of(14, 0), ZoneOffset.UTC);
+
+        AgendamentoService.AgendamentoCriadoComToken existente = agendamentoService.criarComToken(
+                new CriarAgendamentoRequest(
+                        cenario.profissionalId(),
+                        cenario.servico30MinId(),
+                        "Cliente Existente",
+                        "existente@teste.com",
+                        horarioInicial),
+                cenario.tenantId());
+
+        List<Runnable> tarefas = List.of(
+                () -> agendamentoService.remarcarPorToken(
+                        existente.tokenPuro(), new RemarcarAgendamentoRequest(horarioDisputado)),
+                () -> agendamentoService.criar(
+                        new CriarAgendamentoRequest(
+                                cenario.profissionalId(),
+                                cenario.servico30MinId(),
+                                "Cliente Novo",
+                                "novo@teste.com",
+                                horarioDisputado),
+                        cenario.tenantId()));
+
+        ResultadoConcorrencia resultado = executarConcorrente(tarefas);
+        List<Agendamento> salvos = agendamentoRepository.findAllByTenantIdOrderByInicioAsc(cenario.tenantId());
+        long ocupandoHorarioDisputado = salvos.stream()
+                .filter(a -> a.getInicio().toInstant().equals(horarioDisputado.toInstant()))
+                .count();
+
+        log.info("Cenário F (remarcação vs criação) -> threads={}, sucessos={}, conflitos={}, errosInesperados={}, noHorarioDisputado={}",
+                tarefas.size(), resultado.sucessos(), resultado.conflitosHorario(),
+                resultado.errosInesperados().size(), ocupandoHorarioDisputado);
+
+        assertThat(resultado.errosInesperados()).isEmpty();
+        assertThat(resultado.sucessos()).isEqualTo(1);
+        assertThat(resultado.conflitosHorario()).isEqualTo(1);
+        assertThat(ocupandoHorarioDisputado).isEqualTo(1);
     }
 
     private ResultadoConcorrencia executarConcorrente(List<Runnable> tarefas) throws InterruptedException {
