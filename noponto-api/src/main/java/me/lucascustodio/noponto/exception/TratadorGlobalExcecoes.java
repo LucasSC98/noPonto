@@ -1,5 +1,6 @@
 package me.lucascustodio.noponto.exception;
 
+import me.lucascustodio.noponto.dto.ConflitoBloqueioResponse;
 import me.lucascustodio.noponto.dto.ErroResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,16 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class TratadorGlobalExcecoes {
+
+    @ExceptionHandler(ConflitoBloqueioExcecao.class)
+    public ResponseEntity<ConflitoBloqueioResponse> tratarConflitoBloqueio(ConflitoBloqueioExcecao excecao) {
+        ConflitoBloqueioResponse corpo = new ConflitoBloqueioResponse(
+                excecao.getStatus().value(),
+                excecao.getMessage(),
+                OffsetDateTime.now(ZoneOffset.UTC),
+                excecao.getAgendamentosConflitantes());
+        return ResponseEntity.status(excecao.getStatus()).body(corpo);
+    }
 
     @ExceptionHandler(ExcecaoDominio.class)
     public ResponseEntity<ErroResponse> tratarExcecaoDominio(ExcecaoDominio excecao) {

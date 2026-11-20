@@ -36,6 +36,23 @@ public interface AgendamentoRepository extends Repository<Agendamento, UUID> {
                                           @Param("inicio") OffsetDateTime inicio,
                                           @Param("fim") OffsetDateTime fim);
 
+    /** Agendamentos com serviço carregado que interceptam o intervalo {@code [inicio, fim)}. */
+    @Query("""
+            select a from Agendamento a
+            join fetch a.servicoItem
+            where a.tenantId = :tenantId
+              and a.profissional.id = :profissionalId
+              and a.status in :status
+              and a.inicio < :fim
+              and a.fim > :inicio
+            order by a.inicio
+            """)
+    List<Agendamento> buscarInterceptandoComServico(@Param("tenantId") UUID tenantId,
+                                                    @Param("profissionalId") UUID profissionalId,
+                                                    @Param("status") List<StatusAgendamento> status,
+                                                    @Param("inicio") OffsetDateTime inicio,
+                                                    @Param("fim") OffsetDateTime fim);
+
     /** Conta agendamentos nos status informados com início dentro de {@code [inicioPeriodo, fimPeriodo)}. */
     @Query("""
             select new me.lucascustodio.noponto.repository.ContagemPorProfissional(a.profissional.id, count(a))

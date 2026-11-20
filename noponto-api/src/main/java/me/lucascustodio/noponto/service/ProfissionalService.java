@@ -26,6 +26,13 @@ public class ProfissionalService {
         this.servicoItemRepository = servicoItemRepository;
     }
 
+    /** Profissional do tenant (independente de estar ativo ou inativo). */
+    @Transactional(readOnly = true)
+    public Profissional buscarDoTenant(UUID tenantId, UUID profissionalId) {
+        return profissionalRepository.findByIdAndTenantId(profissionalId, tenantId)
+                .orElseThrow(() -> new RecursoNaoEncontradoExcecao("Profissional não encontrado."));
+    }
+
     /** Profissional inativo (ou de outro tenant) é tratado como inexistente. */
     @Transactional(readOnly = true)
     public Profissional buscarAtivo(UUID tenantId, UUID profissionalId) {

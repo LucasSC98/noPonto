@@ -43,6 +43,14 @@ public class AgendamentoConsultaService {
                 tenantId, profissionalId, StatusAgendamento.ocupamHorario(), inicio, fim);
     }
 
+    /** Agendamentos PENDENTE ou CONFIRMADO (com serviço carregado) que interceptam {@code [inicio, fim)}. */
+    @Transactional(readOnly = true)
+    public List<Agendamento> buscarOcupadosComServico(UUID tenantId, UUID profissionalId,
+                                                      OffsetDateTime inicio, OffsetDateTime fim) {
+        return agendamentoRepository.buscarInterceptandoComServico(
+                tenantId, profissionalId, StatusAgendamento.ocupamHorario(), inicio, fim);
+    }
+
     @Transactional(readOnly = true)
     public List<AgendamentoResponse> listar(UUID tenantId) {
         return agendamentoRepository.findAllByTenantIdOrderByInicioAsc(tenantId).stream()

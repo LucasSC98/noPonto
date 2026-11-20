@@ -5,13 +5,16 @@ import me.lucascustodio.noponto.dto.AtualizarAtivoRequest;
 import me.lucascustodio.noponto.dto.AtualizarProfissionalRequest;
 import me.lucascustodio.noponto.dto.AtualizarRegraDisponibilidadeRequest;
 import me.lucascustodio.noponto.dto.AtualizarServicoItemRequest;
+import me.lucascustodio.noponto.dto.BloqueioResponse;
 import me.lucascustodio.noponto.dto.CriarProfissionalRequest;
 import me.lucascustodio.noponto.dto.CriarRegraDisponibilidadeRequest;
 import me.lucascustodio.noponto.dto.CriarServicoItemRequest;
 import me.lucascustodio.noponto.dto.ProfissionalResponse;
 import me.lucascustodio.noponto.dto.RegraDisponibilidadeResponse;
+import me.lucascustodio.noponto.dto.SalvarBloqueioRequest;
 import me.lucascustodio.noponto.dto.SalvarRegraDisponibilidadeRequest;
 import me.lucascustodio.noponto.dto.ServicoItemResponse;
+import me.lucascustodio.noponto.service.GestaoBloqueioService;
 import me.lucascustodio.noponto.service.GestaoProfissionalService;
 import me.lucascustodio.noponto.service.GestaoRegraDisponibilidadeService;
 import me.lucascustodio.noponto.service.GestaoServicoItemService;
@@ -19,6 +22,7 @@ import me.lucascustodio.noponto.tenant.TenantContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,13 +45,16 @@ public class GestaoController {
     private final GestaoProfissionalService gestaoProfissionalService;
     private final GestaoServicoItemService gestaoServicoItemService;
     private final GestaoRegraDisponibilidadeService gestaoRegraDisponibilidadeService;
+    private final GestaoBloqueioService gestaoBloqueioService;
 
     public GestaoController(GestaoProfissionalService gestaoProfissionalService,
                             GestaoServicoItemService gestaoServicoItemService,
-                            GestaoRegraDisponibilidadeService gestaoRegraDisponibilidadeService) {
+                            GestaoRegraDisponibilidadeService gestaoRegraDisponibilidadeService,
+                            GestaoBloqueioService gestaoBloqueioService) {
         this.gestaoProfissionalService = gestaoProfissionalService;
         this.gestaoServicoItemService = gestaoServicoItemService;
         this.gestaoRegraDisponibilidadeService = gestaoRegraDisponibilidadeService;
+        this.gestaoBloqueioService = gestaoBloqueioService;
     }
 
     // --- Profissionais ---
@@ -144,5 +152,35 @@ public class GestaoController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluirRegraDoProfissional(@PathVariable UUID id, @PathVariable UUID regraId) {
         gestaoRegraDisponibilidadeService.excluir(id, regraId, TenantContextHolder.get());
+    }
+
+    // --- Bloqueios ---
+
+    @GetMapping("/professionals/{id}/blocks")
+    public List<BloqueioResponse> listarBloqueiosDoProfissional(
+            @PathVariable UUID id,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime de,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime ate) {
+        return gestaoBloqueioService.listarDoProfissional(TenantContextHolder.get(), id, de, ate);
+    }
+
+    @PostMapping("/professionals/{id}/blocks")
+    @ResponseStatus(HttpStatus.CREATED)
+    public BloqueioResponse criarBloqueioDoProfissional(@PathVariable UUID id,
+                                                        @Valid @RequestBody SalvarBloqueioRequest requisicao) {
+        return gestaoBloqueioService.criar(id, requisicao, TenantContextHolder.get());
+    }
+
+    @PutMapping("/professionals/{id}/blocks/{blocoId}")
+    public BloqueioResponse atualizarBloqueioDoProfissional(@PathVariable UUID id,
+                                                            @PathVariable UUID blocoId,
+                                                            @Valid @RequestBody SalvarBloqueioRequest requisicao) {
+        return gestaoBloqueioService.atualizar(id, blocoId, requisicao, TenantContextHolder.get());
+    }
+
+    @DeleteMapping("/professionals/{id}/blocks/{blocoId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirBloqueioDoProfissional(@PathVariable UUID id, @PathVariable UUID blocoId) {
+        gestaoBloqueioService.excluir(id, blocoId, TenantContextHolder.get());
     }
 }
