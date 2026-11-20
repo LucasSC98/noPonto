@@ -2,15 +2,18 @@ package me.lucascustodio.noponto.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import me.lucascustodio.noponto.dto.AgendamentoAutoatendimentoResponse;
 import me.lucascustodio.noponto.dto.AgendamentoResponse;
 import me.lucascustodio.noponto.dto.AtualizarStatusRequest;
 import me.lucascustodio.noponto.dto.CriarAgendamentoRequest;
 import me.lucascustodio.noponto.dto.ProfissionalPublicoResponse;
+import me.lucascustodio.noponto.dto.RemarcarAgendamentoRequest;
 import me.lucascustodio.noponto.dto.ServicoItemResponse;
 import me.lucascustodio.noponto.service.AgendamentoConsultaService;
 import me.lucascustodio.noponto.service.AgendamentoService;
 import me.lucascustodio.noponto.service.ProfissionalService;
 import me.lucascustodio.noponto.service.SlotService;
+import me.lucascustodio.noponto.tenant.LimitadorTentativasAutoatendimento;
 import me.lucascustodio.noponto.tenant.ResolvedorTenantPublico;
 import me.lucascustodio.noponto.tenant.TenantContextHolder;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -37,17 +40,20 @@ public class AgendamentoController {
     private final AgendamentoConsultaService agendamentoConsultaService;
     private final ProfissionalService profissionalService;
     private final ResolvedorTenantPublico resolvedorTenantPublico;
+    private final LimitadorTentativasAutoatendimento limitadorTentativas;
 
     public AgendamentoController(SlotService slotService,
                                  AgendamentoService agendamentoService,
                                  AgendamentoConsultaService agendamentoConsultaService,
                                  ProfissionalService profissionalService,
-                                 ResolvedorTenantPublico resolvedorTenantPublico) {
+                                 ResolvedorTenantPublico resolvedorTenantPublico,
+                                 LimitadorTentativasAutoatendimento limitadorTentativas) {
         this.slotService = slotService;
         this.agendamentoService = agendamentoService;
         this.agendamentoConsultaService = agendamentoConsultaService;
         this.profissionalService = profissionalService;
         this.resolvedorTenantPublico = resolvedorTenantPublico;
+        this.limitadorTentativas = limitadorTentativas;
     }
 
     @GetMapping("/public/profissionais/{id}")
@@ -77,6 +83,29 @@ public class AgendamentoController {
                                      HttpServletRequest request) {
         UUID tenantId = resolvedorTenantPublico.resolver(request, requisicao.tenant());
         return agendamentoService.criar(requisicao, tenantId);
+    }
+
+    @GetMapping("/public/appointments/manage/{token}")
+    public AgendamentoAutoatendimentoResponse consultarPorToken(@PathVariable String token,
+                                                                HttpServletRequest request) {
+        limitadorTentativas.verificar(request);
+        return agendamentoService.consultarPorToken(token);
+    }
+
+    @PostMapping("/public/appointments/manage/{token}/cancel")
+    public AgendamentoAutoatendimentoResponse cancelarPorToken(@PathVariable String token,
+                                                               HttpServletRequest request) {
+        limitadorTentativas.verificar(request);
+        return agendamentoService.consultarPorToken(token);
+    }
+
+    @PostMapping("/public/appointments/manage/{token}/reschedule")
+    public AgendamentoAutoatendimentoResponse remarcarPorToken(
+            @PathVariable String token,
+            @RequestBody(required = false) RemarcarAgendamentoRequest requisicao,
+            HttpServletRequest request) {
+        limitadorTentativas.verificar(request);
+        return agendamentoService.consultarPorToken(token);
     }
 
     @GetMapping("/agendamentos")

@@ -12,9 +12,15 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @TestConfiguration(proxyBeanMethods = false)
 public class PostgresTestcontainersConfig {
 
-    @Bean
+    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16");
+
+    static {
+        POSTGRES.start();
+    }
+
+    @Bean(destroyMethod = "")
     @ServiceConnection
     PostgreSQLContainer postgresContainer() {
-        return new PostgreSQLContainer("postgres:16");
+        return POSTGRES;
     }
 }

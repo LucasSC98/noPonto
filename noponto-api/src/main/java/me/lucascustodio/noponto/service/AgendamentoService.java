@@ -4,12 +4,21 @@ import me.lucascustodio.noponto.domain.Agendamento;
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.ServicoItem;
 import me.lucascustodio.noponto.domain.StatusAgendamento;
+import me.lucascustodio.noponto.domain.Tenant;
+import me.lucascustodio.noponto.dto.AgendamentoAutoatendimentoResponse;
 import me.lucascustodio.noponto.dto.AgendamentoResponse;
 import me.lucascustodio.noponto.dto.CriarAgendamentoRequest;
 import me.lucascustodio.noponto.exception.HorarioIndisponivelExcecao;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.exception.RegraNegocioExcecao;
+import me.lucascustodio.noponto.notificacao.DadosEmailAgendamento;
+import me.lucascustodio.noponto.notificacao.EventoEmailAgendamento;
+import me.lucascustodio.noponto.notificacao.MensagemEmail;
+import me.lucascustodio.noponto.notificacao.TemplateEmailAgendamento;
 import me.lucascustodio.noponto.repository.AgendamentoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,32 +31,72 @@ import java.util.UUID;
 @Service
 public class AgendamentoService {
 
+    private static final String MENSAGEM_TOKEN_INVALIDO_OU_EXPIRADO =
+            "Agendamento não encontrado ou link de autoatendimento inválido.";
+
     private final AgendamentoRepository agendamentoRepository;
     private final ProfissionalService profissionalService;
     private final SlotService slotService;
     private final TenantService tenantService;
     private final Clock relogio;
+    private final TokenAutoatendimentoService tokenAutoatendimentoService;
+    private final TemplateEmailAgendamento templateEmailAgendamento;
+    private final ApplicationEventPublisher eventPublisher;
+    private final String urlBaseFrontend;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
                               ProfissionalService profissionalService,
                               SlotService slotService,
                               TenantService tenantService,
                               Clock relogio) {
+        this(agendamentoRepository,
+                profissionalService,
+                slotService,
+                tenantService,
+                relogio,
+                new TokenAutoatendimentoService(),
+                new TemplateEmailAgendamento(),
+                evento -> {},
+                "http://localhost:5173");
+    }
+
+    @Autowired
+    public AgendamentoService(AgendamentoRepository agendamentoRepository,
+                              ProfissionalService profissionalService,
+                              SlotService slotService,
+                              TenantService tenantService,
+                              Clock relogio,
+                              TokenAutoatendimentoService tokenAutoatendimentoService,
+                              TemplateEmailAgendamento templateEmailAgendamento,
+                              ApplicationEventPublisher eventPublisher,
+                              @Value("${noponto.frontend.url-base:http://localhost:5173}") String urlBaseFrontend) {
         this.agendamentoRepository = agendamentoRepository;
         this.profissionalService = profissionalService;
         this.slotService = slotService;
         this.tenantService = tenantService;
         this.relogio = relogio;
+        this.tokenAutoatendimentoService = tokenAutoatendimentoService;
+        this.templateEmailAgendamento = templateEmailAgendamento;
+        this.eventPublisher = eventPublisher;
+        this.urlBaseFrontend = urlBaseFrontend;
     }
 
     /**
      * Cria o agendamento de forma transacional. Primeiro trava (SELECT FOR UPDATE) a linha do profissional,
      * o que serializa criações concorrentes para o mesmo profissional; só então recalcula se o slot ainda
-     * está livre. Travar apenas linhas de agendamento não protegeria quando ainda não há nenhuma no horário.
-     * Profissional ou serviço inativo rejeita o novo agendamento sem alterar os já existentes.
+     * está livre. Gera um token aleatório de 32 bytes (Base64URL), persiste apenas seu hash SHA-256 e
+     * dispara o e-mail de confirmação após o commit da transação.
      */
     @Transactional
     public AgendamentoResponse criar(CriarAgendamentoRequest request, UUID tenantId) {
+        return criarComToken(request, tenantId).agendamento();
+    }
+
+    public record AgendamentoCriadoComToken(AgendamentoResponse agendamento, String tokenPuro, String linkGerenciamento) {
+    }
+
+    @Transactional
+    public AgendamentoCriadoComToken criarComToken(CriarAgendamentoRequest request, UUID tenantId) {
         Profissional profissional = profissionalService.buscarAtivoComBloqueio(tenantId, request.profissionalId());
         ServicoItem servico = profissionalService
                 .buscarServicoParaAgendamento(tenantId, profissional.getId(), request.servicoItemId());
@@ -56,6 +105,8 @@ public class AgendamentoService {
         if (!slotService.slotDisponivel(profissional.getId(), inicio, tenantId, servico.getId())) {
             throw new HorarioIndisponivelExcecao();
         }
+
+        TokenAutoatendimentoService.TokenGerado tokenGerado = tokenAutoatendimentoService.gerar();
 
         Agendamento agendamento = new Agendamento();
         agendamento.setTenantId(tenantId);
@@ -66,8 +117,93 @@ public class AgendamentoService {
         agendamento.setInicio(inicio);
         agendamento.setFim(inicio.plus(Duration.ofMinutes(servico.getDuracaoMinutos())));
         agendamento.setStatus(StatusAgendamento.PENDENTE);
+        agendamento.setTokenGerenciamentoHash(tokenGerado.hashSha256());
+        agendamento.setCanceladoPeloCliente(Boolean.FALSE);
+        agendamento.setRemarcado(Boolean.FALSE);
 
-        return AgendamentoResponse.de(agendamentoRepository.save(agendamento));
+        Agendamento salvo = agendamentoRepository.save(agendamento);
+        String link = montarLinkAutoatendimento(tokenGerado.tokenPuro());
+        publicarEmailConfirmacao(salvo, tenantId, link);
+
+        return new AgendamentoCriadoComToken(AgendamentoResponse.de(salvo), tokenGerado.tokenPuro(), link);
+    }
+
+    @Transactional(readOnly = true)
+    public AgendamentoAutoatendimentoResponse consultarPorToken(String tokenPuro) {
+        Agendamento agendamento = buscarPorTokenValido(tokenPuro);
+        Tenant tenant = buscarTenantSeguro(agendamento.getTenantId());
+        return AgendamentoAutoatendimentoResponse.de(agendamento, tenant);
+    }
+
+    /**
+     * Localiza um agendamento ativo (PENDENTE ou CONFIRMADO) cujo token de autoatendimento
+     * corresponda ao hash SHA-256 e ainda não tenha expirado (fim > agora).
+     * Qualquer caso inválido, expirado, concluído, cancelado ou inexistente lança o mesmo 404 genérico.
+     */
+    @Transactional(readOnly = true)
+    public Agendamento buscarPorTokenValido(String tokenPuro) {
+        if (tokenPuro == null || tokenPuro.isBlank()) {
+            throw new RecursoNaoEncontradoExcecao(MENSAGEM_TOKEN_INVALIDO_OU_EXPIRADO);
+        }
+        String hash = tokenAutoatendimentoService.calcularHash(tokenPuro);
+        Agendamento agendamento = agendamentoRepository.buscarPorTokenGerenciamentoHash(hash)
+                .orElseThrow(() -> new RecursoNaoEncontradoExcecao(MENSAGEM_TOKEN_INVALIDO_OU_EXPIRADO));
+
+        if (agendamento.getStatus() == StatusAgendamento.CANCELADO
+                || agendamento.getStatus() == StatusAgendamento.CONCLUIDO) {
+            throw new RecursoNaoEncontradoExcecao(MENSAGEM_TOKEN_INVALIDO_OU_EXPIRADO);
+        }
+
+        OffsetDateTime agora = OffsetDateTime.now(relogio);
+        if (!agendamento.getFim().isAfter(agora)) {
+            throw new RecursoNaoEncontradoExcecao(MENSAGEM_TOKEN_INVALIDO_OU_EXPIRADO);
+        }
+
+        return agendamento;
+    }
+
+    public String montarLinkAutoatendimento(String tokenPuro) {
+        String base = (urlBaseFrontend == null || urlBaseFrontend.isBlank())
+                ? "http://localhost:5173"
+                : urlBaseFrontend.replaceAll("/+$", "");
+        return base + "/agendamento/" + tokenPuro;
+    }
+
+    private void publicarEmailConfirmacao(Agendamento agendamento, UUID tenantId, String linkAutoatendimento) {
+        if (agendamento.getEmailCliente() == null || agendamento.getEmailCliente().isBlank()) {
+            return;
+        }
+        DadosEmailAgendamento dados = montarDadosEmail(agendamento, tenantId, linkAutoatendimento);
+        MensagemEmail mensagem = templateEmailAgendamento.criarConfirmacao(dados);
+        eventPublisher.publishEvent(new EventoEmailAgendamento(mensagem));
+    }
+
+    protected DadosEmailAgendamento montarDadosEmail(Agendamento agendamento, UUID tenantId, String link) {
+        Tenant tenant = buscarTenantSeguro(tenantId);
+        String nomeEstabelecimento = tenant != null && tenant.getNome() != null ? tenant.getNome() : "NoPonto";
+        String fuso = tenant != null && tenant.getFusoHorario() != null
+                ? tenant.getFusoHorario()
+                : "America/Sao_Paulo";
+        return new DadosEmailAgendamento(
+                tenantId,
+                agendamento.getId(),
+                nomeEstabelecimento,
+                fuso,
+                agendamento.getNomeCliente(),
+                agendamento.getEmailCliente(),
+                agendamento.getProfissional().getNome(),
+                agendamento.getServicoItem().getNome(),
+                agendamento.getInicio(),
+                agendamento.getFim(),
+                link);
+    }
+
+    protected Tenant buscarTenantSeguro(UUID tenantId) {
+        try {
+            return tenantService.buscarPorId(tenantId);
+        } catch (Exception excecao) {
+            return null;
+        }
     }
 
     @Transactional

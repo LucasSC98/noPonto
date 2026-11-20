@@ -50,4 +50,13 @@ public class Agendamento extends EntidadeBase {
 
     @Column(name = "cancelado_em")
     private OffsetDateTime canceladoEm;
+
+    @Column(name = "token_gerenciamento_hash", length = 64)
+    private String tokenGerenciamentoHash;
+
+    @Column(name = "cancelado_pelo_cliente", nullable = false)
+    private Boolean canceladoPeloCliente = Boolean.FALSE;
+
+    @Column(name = "remarcado", nullable = false)
+    private Boolean remarcado = Boolean.FALSE;
 }

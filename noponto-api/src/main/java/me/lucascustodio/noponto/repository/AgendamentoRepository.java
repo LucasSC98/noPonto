@@ -18,6 +18,14 @@ public interface AgendamentoRepository extends Repository<Agendamento, UUID> {
 
     Optional<Agendamento> findByIdAndTenantId(UUID id, UUID tenantId);
 
+    @Query("""
+            select a from Agendamento a
+            join fetch a.profissional
+            join fetch a.servicoItem
+            where a.tokenGerenciamentoHash = :tokenHash
+            """)
+    Optional<Agendamento> buscarPorTokenGerenciamentoHash(@Param("tokenHash") String tokenHash);
+
     List<Agendamento> findAllByTenantIdOrderByInicioAsc(UUID tenantId);
 
     /** Agendamentos com os status informados que interceptam o intervalo {@code [inicio, fim)}. */
