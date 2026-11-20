@@ -59,4 +59,7 @@ public class Agendamento extends EntidadeBase {
 
     @Column(name = "remarcado", nullable = false)
     private Boolean remarcado = Boolean.FALSE;
+
+    @Column(name = "lembrete_enviado_em")
+    private OffsetDateTime lembreteEnviadoEm;
 }

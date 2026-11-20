@@ -2,6 +2,7 @@ package me.lucascustodio.noponto.repository;
 
 import me.lucascustodio.noponto.domain.Agendamento;
 import me.lucascustodio.noponto.domain.StatusAgendamento;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -78,4 +79,43 @@ public interface AgendamentoRepository extends Repository<Agendamento, UUID> {
             @Param("status") List<StatusAgendamento> status,
             @Param("inicioPeriodo") OffsetDateTime inicioPeriodo,
             @Param("fimPeriodo") OffsetDateTime fimPeriodo);
+
+    /**
+     * Busca agendamentos ativos na janela de lembrete (cerca de 24h antes) que ainda não receberam lembrete.
+     */
+    @Query("""
+            select a from Agendamento a
+            join fetch a.profissional
+            join fetch a.servicoItem
+            where a.status in :status
+              and a.lembreteEnviadoEm is null
+              and a.emailCliente is not null
+              and a.inicio >= :janelaInicio
+              and a.inicio <= :janelaFim
+            order by a.inicio
+            """)
+    List<Agendamento> buscarPendentesDeLembrete(
+            @Param("status") List<StatusAgendamento> status,
+            @Param("janelaInicio") OffsetDateTime janelaInicio,
+            @Param("janelaFim") OffsetDateTime janelaFim);
+
+    /**
+     * Reserva atomicamente o envio do lembrete para garantir idempotência mesmo com múltiplas
+     * execuções ou múltiplas instâncias da aplicação. Retorna 1 se reservou, 0 se já havia sido enviado
+     * ou se o status deixou de ser ativo.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update Agendamento a
+            set a.lembreteEnviadoEm = :enviadoEm,
+                a.atualizadoEm = :enviadoEm
+            where a.id = :id
+              and a.tenantId = :tenantId
+              and a.status in :status
+              and a.lembreteEnviadoEm is null
+            """)
+    int reservarEnvioLembrete(@Param("id") UUID id,
+                              @Param("tenantId") UUID tenantId,
+                              @Param("status") List<StatusAgendamento> status,
+                              @Param("enviadoEm") OffsetDateTime enviadoEm);
 }
