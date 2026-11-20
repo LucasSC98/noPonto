@@ -1,6 +1,7 @@
 package me.lucascustodio.noponto.service;
 
 import jakarta.persistence.EntityManager;
+import me.lucascustodio.noponto.PostgresTestcontainersConfig;
 import me.lucascustodio.noponto.domain.Agendamento;
 import me.lucascustodio.noponto.domain.Bloqueio;
 import me.lucascustodio.noponto.domain.PerfilUsuario;
@@ -22,12 +23,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
@@ -50,6 +53,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(PostgresTestcontainersConfig.class)
+@Testcontainers(disabledWithoutDocker = true)
 @Transactional
 class BloqueioIntegracaoTest {
 

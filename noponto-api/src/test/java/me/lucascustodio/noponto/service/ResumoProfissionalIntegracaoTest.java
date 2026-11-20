@@ -1,6 +1,7 @@
 package me.lucascustodio.noponto.service;
 
 import jakarta.persistence.EntityManager;
+import me.lucascustodio.noponto.PostgresTestcontainersConfig;
 import me.lucascustodio.noponto.domain.Agendamento;
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.RegraDisponibilidade;
@@ -17,11 +18,13 @@ import me.lucascustodio.noponto.repository.TenantRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
@@ -36,6 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(PostgresTestcontainersConfig.class)
+@Testcontainers(disabledWithoutDocker = true)
 @Transactional
 class ResumoProfissionalIntegracaoTest {
 
