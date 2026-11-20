@@ -31,7 +31,8 @@ noponto:
     # Rotas públicas resolvem o tenant pelo subdomínio: <tenant>.<dominio-base>
     dominio-base: ${NOPONTO_DOMINIO_BASE:noponto.com}
   jwt:
-    # Em produção, defina NOPONTO_JWT_SEGREDO com no mínimo 32 bytes aleatórios
-    segredo: ${NOPONTO_JWT_SEGREDO:noponto-dev-segredo-jwt-trocar-em-producao-0123456789}
+    # Sem valor padrão. Produção precisa de NOPONTO_JWT_SEGREDO com no mínimo 32 bytes.
+    # O fallback vazio faz a aplicação falhar na subida com a mensagem do JwtService.
+    segredo: ${NOPONTO_JWT_SEGREDO:}
     expiracao-minutos: ${NOPONTO_JWT_EXPIRACAO_MINUTOS:480}
 

@@ -74,9 +74,27 @@ class JwtServiceTest {
     }
 
     @Test
-    void deve_lancarExcecao_quando_segredoMenorQue32Bytes() {
+    void deve_falharAoIniciar_quando_segredoAusente() {
+        assertThatThrownBy(() -> new JwtService(null, VALIDADE, Clock.systemUTC()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("NOPONTO_JWT_SEGREDO ausente ou com menos de 32 bytes");
+        assertThatThrownBy(() -> new JwtService("   ", VALIDADE, Clock.systemUTC()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("NOPONTO_JWT_SEGREDO ausente ou com menos de 32 bytes");
+    }
+
+    @Test
+    void deve_falharAoIniciar_quando_segredoMenorQue32Bytes() {
         assertThatThrownBy(() -> new JwtService("curto", VALIDADE, Clock.systemUTC()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("NOPONTO_JWT_SEGREDO ausente ou com menos de 32 bytes");
+    }
+
+    @Test
+    void deve_iniciar_quando_segredoTem32Bytes() {
+        JwtService servico = new JwtService("12345678901234567890123456789012", VALIDADE, Clock.systemUTC());
+
+        assertThat(servico.tokenValido(servico.gerarToken(criarUsuario(PerfilUsuario.ADMIN)))).isTrue();
     }
 
     private static JwtService criarServico(Instant instante) {

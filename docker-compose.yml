@@ -1,3 +1,8 @@
+# Sobe só o PostgreSQL. A API, em produção, exige no processo:
+#   NOPONTO_JWT_SEGREDO (>= 32 bytes; sem isso a aplicação não inicia)
+#   SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD
+#   NOPONTO_CORS_ORIGEM_PERMITIDA
+# Não use SPRING_PROFILES_ACTIVE=dev fora da máquina local.
 services:
   postgres:
     image: postgres:16

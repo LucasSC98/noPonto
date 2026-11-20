@@ -37,10 +37,11 @@ public class JwtService {
     }
 
     public JwtService(String segredo, Duration validade, Clock relogio) {
-        byte[] bytesSegredo = segredo.getBytes(StandardCharsets.UTF_8);
-        if (bytesSegredo.length < TAMANHO_MINIMO_SEGREDO_BYTES) {
-            throw new IllegalStateException("noponto.jwt.segredo must have at least 32 bytes (256 bits)");
+        if (segredo == null || segredo.isBlank()
+                || segredo.getBytes(StandardCharsets.UTF_8).length < TAMANHO_MINIMO_SEGREDO_BYTES) {
+            throw new IllegalStateException("NOPONTO_JWT_SEGREDO ausente ou com menos de 32 bytes");
         }
+        byte[] bytesSegredo = segredo.getBytes(StandardCharsets.UTF_8);
         this.chaveAssinatura = Keys.hmacShaKeyFor(bytesSegredo);
         this.validade = validade;
         this.relogio = relogio;

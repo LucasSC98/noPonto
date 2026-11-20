@@ -1,0 +1,4 @@
+# Segredo exclusivo do perfil de teste. Não vale em produção.
+noponto:
+  jwt:
+    segredo: noponto-teste-segredo-jwt-nao-usar-em-producao-01

@@ -4,3 +4,8 @@
 #
 # Desenvolvimento local:
 #   SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
+
+noponto:
+  jwt:
+    # Segredo apenas deste ambiente. Fora do dev, a API exige NOPONTO_JWT_SEGREDO.
+    segredo: noponto-dev-segredo-jwt-trocar-em-producao-0123456789
