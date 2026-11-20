@@ -1,5 +1,7 @@
 # NoPonto
 
+![CI](https://github.com/LucasSC98/noPonto/actions/workflows/ci.yml/badge.svg)
+
 Sistema de agendamentos multi-tenant. A API fica em `noponto-api/` (Spring Boot, porta 8080) e o frontend em `frontend/` (Vite, porta 5173). O PostgreSQL sobe com `docker compose up -d`.
 
 ## Desenvolvimento local
