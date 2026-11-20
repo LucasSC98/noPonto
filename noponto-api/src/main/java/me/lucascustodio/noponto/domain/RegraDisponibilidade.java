@@ -7,6 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,9 +34,11 @@ public class RegraDisponibilidade extends EntidadeBase {
     @Column(name = "dia_semana", nullable = false)
     private DayOfWeek diaSemana;
 
+    @JdbcType(TipoHorarioComFuso.class)
     @Column(name = "hora_inicio", nullable = false)
     private OffsetTime horaInicio;
 
+    @JdbcType(TipoHorarioComFuso.class)
     @Column(name = "hora_fim", nullable = false)
     private OffsetTime horaFim;
 
