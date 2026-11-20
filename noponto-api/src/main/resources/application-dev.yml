@@ -1,0 +1,6 @@
+# Carregado somente com o perfil dev.
+# Ativa o DevDataSeeder (@Profile("dev")), que cria o admin admin@teste.com / 123456.
+# Não usar em produção.
+#
+# Desenvolvimento local:
+#   SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run

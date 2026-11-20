@@ -18,7 +18,7 @@ noPonto/
 - **Backend (`noponto-api/`)**: Java 21, Spring Boot `4.1.2` (`spring-boot-starter-webmvc`, Data JPA, Security, Validation, Flyway, Lombok, JJWT `0.13.0`), PostgreSQL 16.
 - **Frontend (`frontend/`)**: Vite 8, React 19, TypeScript (`verbatimModuleSyntax` e `erasableSyntaxOnly` ativos — usar `import type` para tipos e `type` unions em vez de `enum` TS), React Router 7, React Hook Form + Zod (`@hookform/resolvers`), Axios, `date-fns`, CSS Modules (sem biblioteca de componentes externa), `oxlint` e Vitest.
 - **Ambiente Windows**: se a política de execução do PowerShell bloquear `npm.ps1`, executar sempre via `npm.cmd` / `npx.cmd`.
-- **Seed de desenvolvimento (`DevDataSeeder`)**: `@Profile("dev")` ativo por padrão em `application.yml`, idempotente (`tenantRepository.count() > 0`). Popula o tenant `clinica-teste`, usuário admin `admin@teste.com` / `123456`, profissional `Dr. João Silva` (`Clínico Geral`), serviços `Consulta Geral` (30 min) e `Retorno` (15 min), e regras Seg–Sex `09:00–18:00`.
+- **Seed de desenvolvimento (`DevDataSeeder`)**: `@Profile("dev")`, **não** ativo por padrão. Subir localmente com `SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run`. Idempotente (`tenantRepository.count() > 0`). Popula o tenant `clinica-teste`, usuário admin `admin@teste.com` / `123456`, profissional `Dr. João Silva` (`Clínico Geral`), serviços `Consulta Geral` (30 min) e `Retorno` (15 min), e regras Seg–Sex `09:00–18:00`.
 
 ## Idioma e Nomenclatura
 
