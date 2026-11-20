@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Java 21 (Temurin) com cache do Maven
         uses: actions/setup-java@v6
@@ -59,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Node.js LTS com cache do npm
         uses: actions/setup-node@v7
