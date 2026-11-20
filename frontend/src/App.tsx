@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PaginaAgendamentoPublico } from './pages/PaginaAgendamentoPublico';
+import { PaginaBloqueios } from './pages/PaginaBloqueios';
 import { PaginaDashboard } from './pages/PaginaDashboard';
 import { PaginaLogin } from './pages/PaginaLogin';
 import { PaginaDisponibilidade } from './pages/PaginaDisponibilidade';
@@ -33,6 +34,14 @@ export function App() {
         element={
           <PrivateRoute>
             <PaginaDisponibilidade />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profissionais/:profissionalId/bloqueios"
+        element={
+          <PrivateRoute>
+            <PaginaBloqueios />
           </PrivateRoute>
         }
       />

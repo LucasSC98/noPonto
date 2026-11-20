@@ -2,14 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { BadgeStatus } from '../components/BadgeStatus';
+import { BarraPainel } from '../components/BarraPainel';
 import {
   atualizarStatusAgendamento,
   listarAgendamentos,
 } from '../services/agendamentoService';
 import { extrairMensagemErro } from '../services/api';
 import { removerToken } from '../services/authService';
+import { listarBloqueios } from '../services/gestaoService';
 import { ROTULO_STATUS, TRANSICOES_STATUS } from '../types/dominio';
 import type { AgendamentoResponse, StatusAgendamento } from '../types/dominio';
+import type { BloqueioResponse } from '../types/gestao';
+import {
+  encontrarBloqueiosConflitantesComAgendamento,
+  formatarPeriodoBloqueio,
+} from '../utils/bloqueios';
 import { formatarDataHoraLocal } from '../utils/datas';
 import estilos from './PaginaDashboard.module.css';
 
@@ -34,10 +41,54 @@ function abreviarUuid(identificador: string): string {
   return identificador.length > 12 ? `${identificador.slice(0, 8)}...` : identificador;
 }
 
+async function carregarBloqueiosDosAgendamentos(
+  lista: AgendamentoResponse[],
+): Promise<Record<string, BloqueioResponse[]>> {
+  const ativos = lista.filter((a) => a.status === 'PENDENTE' || a.status === 'CONFIRMADO');
+  if (ativos.length === 0) {
+    return {};
+  }
+
+  let menorInicio = Date.parse(ativos[0].inicio);
+  let maiorFim = Date.parse(ativos[0].fim);
+  for (const agendamento of ativos) {
+    const inicioMs = Date.parse(agendamento.inicio);
+    const fimMs = Date.parse(agendamento.fim);
+    if (inicioMs < menorInicio) {
+      menorInicio = inicioMs;
+    }
+    if (fimMs > maiorFim) {
+      maiorFim = fimMs;
+    }
+  }
+
+  const periodo = {
+    de: new Date(menorInicio).toISOString(),
+    ate: new Date(maiorFim).toISOString(),
+  };
+  const profissionalIds = Array.from(new Set(ativos.map((a) => a.profissionalId)));
+
+  const resultados = await Promise.allSettled(
+    profissionalIds.map(async (id) => [id, await listarBloqueios(id, periodo)] as const),
+  );
+
+  const mapa: Record<string, BloqueioResponse[]> = {};
+  for (const resultado of resultados) {
+    if (resultado.status === 'fulfilled') {
+      const [profissionalId, bloqueios] = resultado.value;
+      mapa[profissionalId] = bloqueios;
+    }
+  }
+  return mapa;
+}
+
 export function PaginaDashboard() {
   const navegar = useNavigate();
 
   const [agendamentos, setAgendamentos] = useState<AgendamentoResponse[]>([]);
+  const [bloqueiosPorProfissional, setBloqueiosPorProfissional] = useState<
+    Record<string, BloqueioResponse[]>
+  >({});
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<FiltroStatus>('TODOS');
@@ -48,7 +99,9 @@ export function PaginaDashboard() {
     setErro(null);
     try {
       const lista = await listarAgendamentos();
+      const mapaBloqueios = await carregarBloqueiosDosAgendamentos(lista);
       setAgendamentos(lista);
+      setBloqueiosPorProfissional(mapaBloqueios);
     } catch (falha) {
       if (axios.isAxiosError(falha) && falha.response?.status === 401) {
         removerToken();
@@ -67,8 +120,10 @@ export function PaginaDashboard() {
     async function carregarInicial() {
       try {
         const lista = await listarAgendamentos();
+        const mapaBloqueios = await carregarBloqueiosDosAgendamentos(lista);
         if (!cancelado) {
           setAgendamentos(lista);
+          setBloqueiosPorProfissional(mapaBloqueios);
         }
       } catch (falha) {
         if (cancelado) {
@@ -129,6 +184,14 @@ export function PaginaDashboard() {
       ? agendamentos
       : agendamentos.filter((agendamento) => agendamento.status === filtro);
 
+  const totalConflitosBloqueio = agendamentos.filter(
+    (agendamento) =>
+      encontrarBloqueiosConflitantesComAgendamento(
+        agendamento,
+        bloqueiosPorProfissional[agendamento.profissionalId] ?? [],
+      ).length > 0,
+  ).length;
+
   const contagem = {
     total: agendamentos.length,
     pendentes: agendamentos.filter((a) => a.status === 'PENDENTE').length,
@@ -138,42 +201,14 @@ export function PaginaDashboard() {
 
   return (
     <div className={estilos.pagina}>
-      <header className={estilos.barraSuperior}>
-        <div className={estilos.barraConteudo}>
-          <div className={estilos.identidade}>
-            <span className={estilos.marca}>NoPonto</span>
-            <span className={estilos.separador}>/</span>
-            <span className={estilos.tituloPagina}>Dashboard Administrativo</span>
-          </div>
-          <div className={estilos.acoesBarra}>
-            <button
-              type="button"
-              className={estilos.botaoSecundario}
-              onClick={() => navegar('/profissionais')}
-            >
-              Profissionais
-            </button>
-            <button
-              type="button"
-              className={estilos.botaoSecundario}
-              onClick={() => navegar('/servicos')}
-            >
-              Serviços
-            </button>
-            <button
-              type="button"
-              className={estilos.botaoSecundario}
-              onClick={carregar}
-              disabled={carregando}
-            >
-              {carregando ? 'Atualizando...' : 'Atualizar'}
-            </button>
-            <button type="button" className={estilos.botaoSair} onClick={sair}>
-              Sair
-            </button>
-          </div>
-        </div>
-      </header>
+      <BarraPainel atual="/dashboard">
+        <button type="button" className={estilos.botaoSecundario} onClick={carregar} disabled={carregando}>
+          {carregando ? 'Atualizando...' : 'Atualizar'}
+        </button>
+        <button type="button" className={estilos.botaoSair} onClick={sair}>
+          Sair
+        </button>
+      </BarraPainel>
 
       <main className={estilos.conteudo}>
         <section className={estilos.resumo} aria-label="Resumo dos agendamentos">
@@ -222,6 +257,14 @@ export function PaginaDashboard() {
             </div>
           )}
 
+          {!carregando && totalConflitosBloqueio > 0 && (
+            <div className={estilos.alertaAviso} role="status">
+              {totalConflitosBloqueio === 1
+                ? '1 agendamento ativo cai dentro de um bloqueio posterior do profissional e precisa de tratamento manual.'
+                : `${totalConflitosBloqueio} agendamentos ativos caem dentro de bloqueios posteriores e precisam de tratamento manual.`}
+            </div>
+          )}
+
           {carregando ? (
             <p className={estilos.estadoVazio}>Carregando agendamentos...</p>
           ) : agendamentosFiltrados.length === 0 ? (
@@ -243,9 +286,17 @@ export function PaginaDashboard() {
                   {agendamentosFiltrados.map((agendamento) => {
                     const proximosStatus = TRANSICOES_STATUS[agendamento.status];
                     const ocupado = atualizandoId === agendamento.id;
+                    const conflitosBloqueio = encontrarBloqueiosConflitantesComAgendamento(
+                      agendamento,
+                      bloqueiosPorProfissional[agendamento.profissionalId] ?? [],
+                    );
+                    const temConflitoBloqueio = conflitosBloqueio.length > 0;
 
                     return (
-                      <tr key={agendamento.id}>
+                      <tr
+                        key={agendamento.id}
+                        className={temConflitoBloqueio ? estilos.linhaConflitoBloqueio : undefined}
+                      >
                         <td>
                           <div className={estilos.celulaPrincipal}>{agendamento.nomeCliente}</div>
                           {agendamento.emailCliente && (
@@ -262,7 +313,26 @@ export function PaginaDashboard() {
                           {formatarDataHoraLocal(agendamento.inicio)}
                         </td>
                         <td>
-                          <BadgeStatus status={agendamento.status} />
+                          <div className={estilos.celulaStatus}>
+                            <BadgeStatus status={agendamento.status} />
+                            {temConflitoBloqueio && (
+                              <button
+                                type="button"
+                                className={estilos.badgeAviso}
+                                title={conflitosBloqueio
+                                  .map(
+                                    (b) =>
+                                      `${b.motivo || 'Bloqueio'} (${formatarPeriodoBloqueio(b.inicio, b.fim)})`,
+                                  )
+                                  .join('\n')}
+                                onClick={() =>
+                                  navegar(`/profissionais/${agendamento.profissionalId}/bloqueios`)
+                                }
+                              >
+                                Conflito com bloqueio
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td>
                           {proximosStatus.length === 0 ? (

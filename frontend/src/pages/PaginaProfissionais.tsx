@@ -379,6 +379,13 @@ export function PaginaProfissionais() {
                         <button
                           type="button"
                           className={estilos.botaoAcaoPositivo}
+                          onClick={() => navegar(`/profissionais/${profissional.id}/bloqueios`)}
+                        >
+                          Bloqueios
+                        </button>
+                        <button
+                          type="button"
+                          className={estilos.botaoAcaoPositivo}
                           onClick={() => copiarLinkAgendamento(profissional.id)}
                         >
                           {linkCopiadoId === profissional.id ? 'Link copiado!' : 'Copiar link'}

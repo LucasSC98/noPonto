@@ -2,11 +2,13 @@ import { api } from './api';
 import type {
   AtualizarProfissionalRequest,
   AtualizarServicoItemRequest,
+  BloqueioResponse,
   CriarProfissionalRequest,
   CriarServicoItemRequest,
   Pagina,
   ProfissionalResponse,
   RegraDisponibilidadeResponse,
+  SalvarBloqueioRequest,
   SalvarRegraDisponibilidadeRequest,
   ServicoItemResponse,
   TenantAtualResponse,
@@ -103,4 +105,48 @@ export async function atualizarRegra(
 
 export async function removerRegra(profissionalId: string, regraId: string): Promise<void> {
   await api.delete(`/professionals/${profissionalId}/availability-rules/${regraId}`);
+}
+
+export async function listarBloqueios(
+  profissionalId: string,
+  periodo?: { de?: string; ate?: string },
+): Promise<BloqueioResponse[]> {
+  const params: Record<string, string> = {};
+  if (periodo?.de) {
+    params.de = periodo.de;
+  }
+  if (periodo?.ate) {
+    params.ate = periodo.ate;
+  }
+  const resposta = await api.get<BloqueioResponse[]>(`/professionals/${profissionalId}/blocks`, {
+    params,
+  });
+  return resposta.data;
+}
+
+export async function criarBloqueio(
+  profissionalId: string,
+  dados: SalvarBloqueioRequest,
+): Promise<BloqueioResponse> {
+  const resposta = await api.post<BloqueioResponse>(
+    `/professionals/${profissionalId}/blocks`,
+    dados,
+  );
+  return resposta.data;
+}
+
+export async function atualizarBloqueio(
+  profissionalId: string,
+  blocoId: string,
+  dados: SalvarBloqueioRequest,
+): Promise<BloqueioResponse> {
+  const resposta = await api.put<BloqueioResponse>(
+    `/professionals/${profissionalId}/blocks/${blocoId}`,
+    dados,
+  );
+  return resposta.data;
+}
+
+export async function removerBloqueio(profissionalId: string, blocoId: string): Promise<void> {
+  await api.delete(`/professionals/${profissionalId}/blocks/${blocoId}`);
 }

@@ -1,3 +1,5 @@
+import type { StatusAgendamento } from './dominio';
+
 export interface ServicoVinculadoResponse {
   id: string;
   nome: string;
@@ -78,6 +80,37 @@ export interface AtualizarRegraDisponibilidadeRequest extends SalvarRegraDisponi
 
 export interface TenantAtualResponse {
   subdominio: string;
+}
+
+export interface BloqueioResponse {
+  id: string;
+  profissionalId: string;
+  inicio: string;
+  fim: string;
+  motivo: string | null;
+}
+
+export interface SalvarBloqueioRequest {
+  inicio: string;
+  fim: string;
+  motivo?: string | null;
+  confirmarMesmoComConflito?: boolean;
+}
+
+export interface AgendamentoConflitanteResponse {
+  id: string;
+  nomeCliente: string;
+  servicoNome: string;
+  inicio: string;
+  fim: string;
+  status: StatusAgendamento;
+}
+
+export interface ConflitoBloqueioResponse {
+  status: number;
+  mensagem: string;
+  momento: string;
+  agendamentosConflitantes: AgendamentoConflitanteResponse[];
 }
 
 export interface Pagina<T> {
