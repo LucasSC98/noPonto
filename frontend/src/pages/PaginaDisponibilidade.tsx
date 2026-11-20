@@ -10,9 +10,9 @@ import {
 } from '../services/gestaoService';
 import { extrairMensagemErro } from '../services/api';
 import { removerToken } from '../services/authService';
+import { BarraPainel } from '../components/BarraPainel';
 import type { DiaSemana, RegraDisponibilidadeResponse } from '../types/gestao';
 import estilos from './PaginaDashboard.module.css';
-import estilosFormulario from './PaginaAgendamentoPublico.module.css';
 
 const DIAS: { valor: DiaSemana; rotulo: string }[] = [
   { valor: 'MONDAY', rotulo: 'Segunda-feira' },
@@ -163,145 +163,92 @@ export function PaginaDisponibilidade() {
 
   return (
     <div className={estilos.pagina}>
-      <header className={estilos.barraSuperior}>
-        <div className={estilos.barraConteudo}>
-          <div className={estilos.identidade}>
-            <span className={estilos.marca}>NoPonto</span>
-            <span className={estilos.separador}>/</span>
-            <span className={estilos.tituloPagina}>Disponibilidade</span>
-          </div>
-          <div className={estilos.acoesBarra}>
-            <button type="button" className={estilos.botaoSecundario} onClick={() => navegar('/profissionais')}>
-              Voltar aos profissionais
-            </button>
-          </div>
-        </div>
-      </header>
+      <BarraPainel atual="/profissionais" />
 
       <main className={estilos.conteudo}>
-        <section className={estilos.painel}>
-          <h1 className={estilos.tituloPainel}>Horários de {nomeProfissional}</h1>
-          <p className={estilosFormulario.textoAuxiliar}>
-            Cadastre as faixas em que este profissional atende. O fim precisa ser depois do início,
-            e as faixas do mesmo dia não podem se sobrepor.
-          </p>
-          {erro && <div className={estilos.alertaErro}>{erro}</div>}
-        </section>
+        <div className={estilos.introducao}>
+          <div>
+            <h1 className={estilos.tituloGrande}>Horários de {nomeProfissional}</h1>
+            <p className={estilos.descricao}>
+              Cada dia pode ter várias faixas. O fim precisa ser depois do início, e faixas do mesmo dia não se sobrepõem.
+            </p>
+          </div>
+        </div>
+
+        {erro && <div className={estilos.alertaErro}>{erro}</div>}
 
         {carregando ? (
           <p className={estilos.estadoVazio}>Carregando...</p>
         ) : (
-          DIAS.map((dia) => {
-            const faixas = regras.filter((regra) => regra.diaSemana === dia.valor);
-            return (
-              <section key={dia.valor} className={estilos.painel}>
-                <h2 className={estilos.tituloPainel}>{dia.rotulo}</h2>
-
-                {faixas.length === 0 ? (
-                  <p className={estilos.estadoVazio}>Nenhuma faixa neste dia.</p>
-                ) : (
-                  <div className={estilos.tabelaWrapper}>
-                    <table className={estilos.tabela}>
-                      <thead>
-                        <tr>
-                          <th>Início</th>
-                          <th>Fim</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {faixas.map((faixa) => (
-                          <tr key={faixa.id}>
-                            {editandoId === faixa.id ? (
-                              <td colSpan={3}>
-                                <form
-                                  onSubmit={(evento) => aoSalvarEdicao(evento, faixa)}
-                                  className={estilosFormulario.gradeCampos}
-                                >
-                                  <label className={estilosFormulario.campo}>
-                                    <span className={estilosFormulario.rotulo}>Início</span>
-                                    <input
-                                      type="time"
-                                      required
-                                      value={inicioEdicao}
-                                      onChange={(evento) => setInicioEdicao(evento.target.value)}
-                                      className={estilosFormulario.entrada}
-                                    />
-                                  </label>
-                                  <label className={estilosFormulario.campo}>
-                                    <span className={estilosFormulario.rotulo}>Fim</span>
-                                    <input
-                                      type="time"
-                                      required
-                                      value={fimEdicao}
-                                      onChange={(evento) => setFimEdicao(evento.target.value)}
-                                      className={estilosFormulario.entrada}
-                                    />
-                                  </label>
-                                  <div className={estilos.grupoAcoes}>
-                                    <button type="submit" className={estilos.botaoAcaoPositivo} disabled={salvando}>
-                                      Salvar
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className={estilos.botaoSecundario}
-                                      onClick={() => setEditandoId(null)}
-                                    >
-                                      Cancelar
-                                    </button>
-                                  </div>
-                                </form>
-                              </td>
-                            ) : (
-                              <>
-                                <td>{offsetTimeParaHora(faixa.horaInicio)}</td>
-                                <td>{offsetTimeParaHora(faixa.horaFim)}</td>
-                                <td>
-                                  <div className={estilos.grupoAcoes}>
-                                    <button
-                                      type="button"
-                                      className={estilos.botaoAcaoPositivo}
-                                      onClick={() => iniciarEdicao(faixa)}
-                                    >
-                                      Editar
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className={estilos.botaoAcaoPerigo}
-                                      disabled={salvando}
-                                      onClick={() => aoRemover(faixa.id)}
-                                    >
-                                      Remover
-                                    </button>
-                                  </div>
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+          <div className={estilos.semana}>
+            {DIAS.map((dia) => {
+              const faixas = regras.filter((regra) => regra.diaSemana === dia.valor);
+              return (
+                <section key={dia.valor} className={estilos.diaCard}>
+                  <h2 className={estilos.diaNome}>{dia.rotulo.replace('-feira', '')}</h2>
+                  <div className={estilos.faixas}>
+                    {faixas.length === 0 && <p className={estilos.subItem}>Sem atendimento</p>}
+                    {faixas.map((faixa) =>
+                      editandoId === faixa.id ? (
+                        <form key={faixa.id} className={estilos.formDia} onSubmit={(evento) => aoSalvarEdicao(evento, faixa)}>
+                          <input
+                            type="time"
+                            required
+                            value={inicioEdicao}
+                            aria-label="Início"
+                            onChange={(evento) => setInicioEdicao(evento.target.value)}
+                            className={estilos.entrada}
+                          />
+                          <input
+                            type="time"
+                            required
+                            value={fimEdicao}
+                            aria-label="Fim"
+                            onChange={(evento) => setFimEdicao(evento.target.value)}
+                            className={estilos.entrada}
+                          />
+                          <div className={estilos.faixaAcoes}>
+                            <button type="submit" className={estilos.botaoAcaoPositivo} disabled={salvando}>
+                              Salvar
+                            </button>
+                            <button type="button" className={estilos.botaoSecundario} onClick={() => setEditandoId(null)}>
+                              Cancelar
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div key={faixa.id} className={estilos.faixa}>
+                          <span>
+                            {offsetTimeParaHora(faixa.horaInicio)} – {offsetTimeParaHora(faixa.horaFim)}
+                          </span>
+                          <div className={estilos.faixaAcoes}>
+                            <button type="button" className={estilos.botaoAcaoPositivo} onClick={() => iniciarEdicao(faixa)}>
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className={estilos.botaoAcaoPerigo}
+                              disabled={salvando}
+                              onClick={() => aoRemover(faixa.id)}
+                            >
+                              Remover
+                            </button>
+                          </div>
+                        </div>
+                      ),
+                    )}
                   </div>
-                )}
-
-                <form onSubmit={(evento) => aoAdicionar(evento, dia.valor)} className={estilosFormulario.gradeCampos}>
-                  <label className={estilosFormulario.campo}>
-                    <span className={estilosFormulario.rotulo}>Início</span>
-                    <input type="time" name="inicio" required defaultValue="08:00" className={estilosFormulario.entrada} />
-                  </label>
-                  <label className={estilosFormulario.campo}>
-                    <span className={estilosFormulario.rotulo}>Fim</span>
-                    <input type="time" name="fim" required defaultValue="12:00" className={estilosFormulario.entrada} />
-                  </label>
-                  <div className={estilos.grupoAcoes}>
-                    <button type="submit" className={estilos.botaoSecundario} disabled={salvando}>
-                      Adicionar faixa
+                  <form className={estilos.formDia} onSubmit={(evento) => aoAdicionar(evento, dia.valor)}>
+                    <input type="time" name="inicio" required defaultValue="08:00" aria-label={`Início em ${dia.rotulo}`} className={estilos.entrada} />
+                    <input type="time" name="fim" required defaultValue="12:00" aria-label={`Fim em ${dia.rotulo}`} className={estilos.entrada} />
+                    <button type="submit" className={estilos.botaoPrimario} disabled={salvando}>
+                      Adicionar
                     </button>
-                  </div>
-                </form>
-              </section>
-            );
-          })
+                  </form>
+                </section>
+              );
+            })}
+          </div>
         )}
       </main>
     </div>
