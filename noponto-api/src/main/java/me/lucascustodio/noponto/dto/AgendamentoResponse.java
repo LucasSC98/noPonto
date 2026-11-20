@@ -18,7 +18,9 @@ public record AgendamentoResponse(
         String emailCliente,
         OffsetDateTime inicio,
         OffsetDateTime fim,
-        StatusAgendamento status) {
+        StatusAgendamento status,
+        boolean canceladoPeloCliente,
+        boolean remarcado) {
 
     public static AgendamentoResponse de(Agendamento agendamento) {
         return new AgendamentoResponse(
@@ -31,6 +33,8 @@ public record AgendamentoResponse(
                 agendamento.getEmailCliente(),
                 agendamento.getInicio().withOffsetSameInstant(ZoneOffset.UTC),
                 agendamento.getFim().withOffsetSameInstant(ZoneOffset.UTC),
-                agendamento.getStatus());
+                agendamento.getStatus(),
+                Boolean.TRUE.equals(agendamento.getCanceladoPeloCliente()),
+                Boolean.TRUE.equals(agendamento.getRemarcado()));
     }
 }

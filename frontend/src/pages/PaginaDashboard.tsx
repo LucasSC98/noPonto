@@ -315,6 +315,13 @@ export function PaginaDashboard() {
                         <td>
                           <div className={estilos.celulaStatus}>
                             <BadgeStatus status={agendamento.status} />
+                            {agendamento.status === 'CANCELADO' &&
+                              agendamento.canceladoPeloCliente && (
+                                <span className={estilos.pilula}>Cancelado pelo cliente</span>
+                              )}
+                            {agendamento.remarcado && (
+                              <span className={estilos.pilula}>Remarcado</span>
+                            )}
                             {temConflitoBloqueio && (
                               <button
                                 type="button"

@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PaginaAgendamentoPublico } from './pages/PaginaAgendamentoPublico';
+import { PaginaAutoatendimento } from './pages/PaginaAutoatendimento';
 import { PaginaBloqueios } from './pages/PaginaBloqueios';
 import { PaginaDashboard } from './pages/PaginaDashboard';
 import { PaginaLogin } from './pages/PaginaLogin';
@@ -12,6 +13,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/agendar/:profissionalId" element={<PaginaAgendamentoPublico />} />
+      <Route path="/agendamento/:token" element={<PaginaAutoatendimento />} />
       <Route path="/login" element={<PaginaLogin />} />
       <Route
         path="/dashboard"

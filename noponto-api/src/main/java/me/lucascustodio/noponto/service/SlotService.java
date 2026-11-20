@@ -52,6 +52,17 @@ public class SlotService {
     @Transactional(readOnly = true)
     public List<OffsetDateTime> calcularSlotsDisponiveis(UUID profissionalId, LocalDate data,
                                                          UUID tenantId, UUID servicoItemId) {
+        return calcularSlotsDisponiveis(profissionalId, data, tenantId, servicoItemId, null);
+    }
+
+    /**
+     * Calcula os slots disponíveis desconsiderando opcionalmente um agendamento específico
+     * (usado na remarcação para que o horário atual do cliente não bloqueie a própria consulta).
+     */
+    @Transactional(readOnly = true)
+    public List<OffsetDateTime> calcularSlotsDisponiveis(UUID profissionalId, LocalDate data,
+                                                         UUID tenantId, UUID servicoItemId,
+                                                         UUID agendamentoIgnoradoId) {
         profissionalService.buscarAtivo(tenantId, profissionalId);
         ServicoItem servico = profissionalService.buscarServicoAtivo(tenantId, profissionalId, servicoItemId);
         Duration duracao = Duration.ofMinutes(servico.getDuracaoMinutos());
@@ -71,7 +82,11 @@ public class SlotService {
         List<Bloqueio> bloqueios = bloqueioRepository
                 .buscarInterceptando(tenantId, profissionalId, inicioBusca, fimBusca);
         List<Agendamento> agendamentos = agendamentoConsultaService
-                .buscarOcupados(tenantId, profissionalId, inicioBusca, fimBusca);
+                .buscarOcupados(tenantId, profissionalId, inicioBusca, fimBusca)
+                .stream()
+                .filter(agendamento -> agendamentoIgnoradoId == null
+                        || !agendamentoIgnoradoId.equals(agendamento.getId()))
+                .toList();
 
         OffsetDateTime agora = OffsetDateTime.now(relogio);
         TreeSet<OffsetDateTime> slots = new TreeSet<>();
@@ -95,10 +110,16 @@ public class SlotService {
      */
     @Transactional(readOnly = true)
     public boolean slotDisponivel(UUID profissionalId, OffsetDateTime inicio, UUID tenantId, UUID servicoItemId) {
+        return slotDisponivel(profissionalId, inicio, tenantId, servicoItemId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean slotDisponivel(UUID profissionalId, OffsetDateTime inicio, UUID tenantId,
+                                  UUID servicoItemId, UUID agendamentoIgnoradoId) {
         LocalDate dataUtc = inicio.withOffsetSameInstant(ZoneOffset.UTC).toLocalDate();
         for (int deslocamentoDias = -1; deslocamentoDias <= 1; deslocamentoDias++) {
             List<OffsetDateTime> slots = calcularSlotsDisponiveis(
-                    profissionalId, dataUtc.plusDays(deslocamentoDias), tenantId, servicoItemId);
+                    profissionalId, dataUtc.plusDays(deslocamentoDias), tenantId, servicoItemId, agendamentoIgnoradoId);
             if (slots.stream().anyMatch(slot -> slot.toInstant().equals(inicio.toInstant()))) {
                 return true;
             }

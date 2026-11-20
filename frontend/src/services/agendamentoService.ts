@@ -1,5 +1,6 @@
 import { api } from './api';
 import type {
+  AgendamentoAutoatendimentoResponse,
   AgendamentoResponse,
   CriarAgendamentoRequest,
   ProfissionalPublicoResponse,
@@ -80,6 +81,46 @@ export async function atualizarStatusAgendamento(
   const resposta = await api.patch<AgendamentoResponse>(
     `/agendamentos/${agendamentoId}/status`,
     { status },
+  );
+  return resposta.data;
+}
+
+export async function consultarAgendamentoPorToken(
+  token: string,
+): Promise<AgendamentoAutoatendimentoResponse> {
+  const resposta = await api.get<AgendamentoAutoatendimentoResponse>(
+    `/public/appointments/manage/${encodeURIComponent(token)}`,
+  );
+  return resposta.data;
+}
+
+export async function buscarSlotsAutoatendimento(
+  token: string,
+  data: string,
+): Promise<string[]> {
+  const resposta = await api.get<string[]>(
+    `/public/appointments/manage/${encodeURIComponent(token)}/slots`,
+    { params: { data } },
+  );
+  return resposta.data;
+}
+
+export async function cancelarAgendamentoPorToken(
+  token: string,
+): Promise<AgendamentoAutoatendimentoResponse> {
+  const resposta = await api.post<AgendamentoAutoatendimentoResponse>(
+    `/public/appointments/manage/${encodeURIComponent(token)}/cancel`,
+  );
+  return resposta.data;
+}
+
+export async function remarcarAgendamentoPorToken(
+  token: string,
+  inicio: string,
+): Promise<AgendamentoAutoatendimentoResponse> {
+  const resposta = await api.post<AgendamentoAutoatendimentoResponse>(
+    `/public/appointments/manage/${encodeURIComponent(token)}/reschedule`,
+    { inicio },
   );
   return resposta.data;
 }

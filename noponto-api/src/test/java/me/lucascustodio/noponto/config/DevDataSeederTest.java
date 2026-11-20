@@ -1,5 +1,6 @@
 package me.lucascustodio.noponto.config;
 
+import me.lucascustodio.noponto.domain.Agendamento;
 import me.lucascustodio.noponto.domain.Bloqueio;
 import me.lucascustodio.noponto.domain.PerfilUsuario;
 import me.lucascustodio.noponto.domain.Profissional;
@@ -7,12 +8,14 @@ import me.lucascustodio.noponto.domain.RegraDisponibilidade;
 import me.lucascustodio.noponto.domain.ServicoItem;
 import me.lucascustodio.noponto.domain.Tenant;
 import me.lucascustodio.noponto.domain.Usuario;
+import me.lucascustodio.noponto.repository.AgendamentoRepository;
 import me.lucascustodio.noponto.repository.BloqueioRepository;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import me.lucascustodio.noponto.repository.RegraDisponibilidadeRepository;
 import me.lucascustodio.noponto.repository.ServicoItemRepository;
 import me.lucascustodio.noponto.repository.TenantRepository;
 import me.lucascustodio.noponto.repository.UsuarioRepository;
+import me.lucascustodio.noponto.service.TokenAutoatendimentoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,6 +45,7 @@ class DevDataSeederTest {
     private ServicoItemRepository servicoItemRepository;
     private RegraDisponibilidadeRepository regraRepository;
     private BloqueioRepository bloqueioRepository;
+    private AgendamentoRepository agendamentoRepository;
     private PasswordEncoder passwordEncoder;
     private DevDataSeeder seeder;
 
@@ -53,6 +57,7 @@ class DevDataSeederTest {
         servicoItemRepository = mock(ServicoItemRepository.class);
         regraRepository = mock(RegraDisponibilidadeRepository.class);
         bloqueioRepository = mock(BloqueioRepository.class);
+        agendamentoRepository = mock(AgendamentoRepository.class);
         passwordEncoder = new BCryptPasswordEncoder(4);
         Clock relogio = Clock.fixed(Instant.parse("2026-11-20T12:00:00Z"), ZoneOffset.UTC);
         seeder = new DevDataSeeder(
@@ -62,6 +67,8 @@ class DevDataSeederTest {
                 servicoItemRepository,
                 regraRepository,
                 bloqueioRepository,
+                agendamentoRepository,
+                new TokenAutoatendimentoService(),
                 passwordEncoder,
                 relogio);
     }
@@ -74,7 +81,7 @@ class DevDataSeederTest {
 
         verify(tenantRepository).count();
         verifyNoInteractions(usuarioRepository, profissionalRepository, servicoItemRepository,
-                regraRepository, bloqueioRepository);
+                regraRepository, bloqueioRepository, agendamentoRepository);
     }
 
     @Test
@@ -118,5 +125,10 @@ class DevDataSeederTest {
         assertThat(bloqueio.getMotivo()).isEqualTo("Feriado de Natal");
         assertThat(bloqueio.getInicio()).isEqualTo(OffsetDateTime.parse("2026-12-25T03:00:00Z"));
         assertThat(bloqueio.getFim()).isEqualTo(OffsetDateTime.parse("2026-12-26T03:00:00Z"));
+
+        ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
+        verify(agendamentoRepository).save(agendamentoCaptor.capture());
+        Agendamento agendamento = agendamentoCaptor.getValue();
+        assertThat(agendamento.getTokenGerenciamentoHash()).hasSize(64);
     }
 }

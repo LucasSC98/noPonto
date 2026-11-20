@@ -250,6 +250,22 @@ class SlotServiceTest {
                 .isFalse();
     }
 
+    @Test
+    void deve_ignorarProprioAgendamento_quando_calcularSlotsParaRemarcacao() {
+        regraDeSexta("08:00", "10:00");
+        Agendamento proprio = agendamento("2026-11-20T09:00:00-03:00", "2026-11-20T10:00:00-03:00");
+        UUID proprioId = UUID.randomUUID();
+        proprio.setId(proprioId);
+        when(agendamentoConsultaService.buscarOcupados(eq(TENANT_ID), eq(PROFISSIONAL_ID), any(), any()))
+                .thenReturn(List.of(proprio));
+
+        SlotService slotService = criarServico("2026-11-18T12:00:00Z");
+
+        assertThat(slotService.slotDisponivel(
+                PROFISSIONAL_ID, utc("2026-11-20T12:00:00Z"), TENANT_ID, SERVICO_ID, proprioId))
+                .isTrue();
+    }
+
     // ---- apoio ----
 
     private SlotService criarServico(String agoraUtc) {

@@ -1,19 +1,23 @@
 package me.lucascustodio.noponto.config;
 
 import lombok.extern.slf4j.Slf4j;
+import me.lucascustodio.noponto.domain.Agendamento;
 import me.lucascustodio.noponto.domain.Bloqueio;
 import me.lucascustodio.noponto.domain.PerfilUsuario;
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.RegraDisponibilidade;
 import me.lucascustodio.noponto.domain.ServicoItem;
+import me.lucascustodio.noponto.domain.StatusAgendamento;
 import me.lucascustodio.noponto.domain.Tenant;
 import me.lucascustodio.noponto.domain.Usuario;
+import me.lucascustodio.noponto.repository.AgendamentoRepository;
 import me.lucascustodio.noponto.repository.BloqueioRepository;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import me.lucascustodio.noponto.repository.RegraDisponibilidadeRepository;
 import me.lucascustodio.noponto.repository.ServicoItemRepository;
 import me.lucascustodio.noponto.repository.TenantRepository;
 import me.lucascustodio.noponto.repository.UsuarioRepository;
+import me.lucascustodio.noponto.service.TokenAutoatendimentoService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -29,6 +33,7 @@ import java.time.Month;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @Slf4j
@@ -49,6 +54,8 @@ public class DevDataSeeder implements ApplicationRunner {
     private final ServicoItemRepository servicoItemRepository;
     private final RegraDisponibilidadeRepository regraDisponibilidadeRepository;
     private final BloqueioRepository bloqueioRepository;
+    private final AgendamentoRepository agendamentoRepository;
+    private final TokenAutoatendimentoService tokenAutoatendimentoService;
     private final PasswordEncoder passwordEncoder;
     private final Clock relogio;
 
@@ -58,6 +65,8 @@ public class DevDataSeeder implements ApplicationRunner {
                          ServicoItemRepository servicoItemRepository,
                          RegraDisponibilidadeRepository regraDisponibilidadeRepository,
                          BloqueioRepository bloqueioRepository,
+                         AgendamentoRepository agendamentoRepository,
+                         TokenAutoatendimentoService tokenAutoatendimentoService,
                          PasswordEncoder passwordEncoder,
                          Clock relogio) {
         this.tenantRepository = tenantRepository;
@@ -66,6 +75,8 @@ public class DevDataSeeder implements ApplicationRunner {
         this.servicoItemRepository = servicoItemRepository;
         this.regraDisponibilidadeRepository = regraDisponibilidadeRepository;
         this.bloqueioRepository = bloqueioRepository;
+        this.agendamentoRepository = agendamentoRepository;
+        this.tokenAutoatendimentoService = tokenAutoatendimentoService;
         this.passwordEncoder = passwordEncoder;
         this.relogio = relogio;
     }
@@ -132,9 +143,29 @@ public class DevDataSeeder implements ApplicationRunner {
         bloqueioExemplo.setMotivo("Feriado de Natal");
         bloqueioRepository.save(bloqueioExemplo);
 
+        LocalDate proximaSegunda = hoje.plusDays(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+        OffsetDateTime inicioExemplo = OffsetDateTime.of(proximaSegunda, LocalTime.of(10, 0), fusoEstabelecimento)
+                .withOffsetSameInstant(ZoneOffset.UTC);
+        TokenAutoatendimentoService.TokenGerado tokenExemplo = tokenAutoatendimentoService.gerar();
+        Agendamento agendamentoExemplo = new Agendamento();
+        agendamentoExemplo.setTenantId(tenant.getId());
+        agendamentoExemplo.setProfissional(profissional);
+        agendamentoExemplo.setServicoItem(consultaGeral);
+        agendamentoExemplo.setNomeCliente("Maria Exemplo");
+        agendamentoExemplo.setEmailCliente("maria.exemplo@teste.com");
+        agendamentoExemplo.setInicio(inicioExemplo);
+        agendamentoExemplo.setFim(inicioExemplo.plusMinutes(consultaGeral.getDuracaoMinutos()));
+        agendamentoExemplo.setStatus(StatusAgendamento.CONFIRMADO);
+        agendamentoExemplo.setTokenGerenciamentoHash(tokenExemplo.hashSha256());
+        agendamentoExemplo.setCanceladoPeloCliente(Boolean.FALSE);
+        agendamentoExemplo.setRemarcado(Boolean.FALSE);
+        agendamentoRepository.save(agendamentoExemplo);
+
         log.info("✅ Seed concluído: tenant clinica-teste, admin@teste.com / 123456");
         log.info("Dados dev criados -> profissionalId={}, consultaGeralId={}, retornoId={}",
                 profissional.getId(), consultaGeral.getId(), retorno.getId());
+        log.info("🔗 Link de autoatendimento de exemplo (dev): http://localhost:5173/agendamento/{}",
+                tokenExemplo.tokenPuro());
     }
 
     private ServicoItem criarServico(Tenant tenant, Profissional profissional, String nome, int duracaoMinutos) {

@@ -8,6 +8,7 @@ import me.lucascustodio.noponto.domain.Tenant;
 import me.lucascustodio.noponto.dto.AgendamentoAutoatendimentoResponse;
 import me.lucascustodio.noponto.dto.AgendamentoResponse;
 import me.lucascustodio.noponto.dto.CriarAgendamentoRequest;
+import me.lucascustodio.noponto.dto.RemarcarAgendamentoRequest;
 import me.lucascustodio.noponto.exception.HorarioIndisponivelExcecao;
 import me.lucascustodio.noponto.exception.RecursoNaoEncontradoExcecao;
 import me.lucascustodio.noponto.exception.RegraNegocioExcecao;
@@ -24,8 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -135,6 +138,94 @@ public class AgendamentoService {
         return AgendamentoAutoatendimentoResponse.de(agendamento, tenant);
     }
 
+    @Transactional(readOnly = true)
+    public List<OffsetDateTime> listarSlotsParaRemarcacao(String tokenPuro, LocalDate data) {
+        Agendamento agendamento = buscarPorTokenValido(tokenPuro);
+        return slotService.calcularSlotsDisponiveis(
+                agendamento.getProfissional().getId(),
+                data,
+                agendamento.getTenantId(),
+                agendamento.getServicoItem().getId(),
+                agendamento.getId());
+    }
+
+    /**
+     * Cancelamento pelo cliente via token de autoatendimento.
+     * Só é permitido para PENDENTE ou CONFIRMADO e respeitando a antecedência mínima do tenant.
+     * Profissional ou serviço inativo não impede o cancelamento.
+     */
+    @Transactional
+    public AgendamentoAutoatendimentoResponse cancelarPorToken(String tokenPuro) {
+        Agendamento agendamento = buscarPorTokenValido(tokenPuro);
+        UUID tenantId = agendamento.getTenantId();
+        OffsetDateTime agora = OffsetDateTime.now(relogio);
+
+        validarAntecedenciaCancelamento(agendamento, tenantId, agora);
+
+        agendamento.setStatus(StatusAgendamento.CANCELADO);
+        agendamento.setCanceladoEm(agora);
+        agendamento.setCanceladoPeloCliente(Boolean.TRUE);
+
+        Agendamento salvo = agendamentoRepository.save(agendamento);
+        publicarEmailCancelamento(salvo, tenantId);
+
+        return AgendamentoAutoatendimentoResponse.de(salvo, buscarTenantSeguro(tenantId));
+    }
+
+    /**
+     * Remarcação transacional pelo cliente via token de autoatendimento.
+     * Exige antecedência mínima em relação ao horário ATUAL, profissional e serviço ativos,
+     * adquire lock pessimista (SELECT FOR UPDATE) na linha do profissional e revalida o novo slot
+     * desconsiderando o próprio agendamento antes de atualizar o mesmo registro (mantendo id e token).
+     */
+    @Transactional
+    public AgendamentoAutoatendimentoResponse remarcarPorToken(String tokenPuro,
+                                                               RemarcarAgendamentoRequest requisicao) {
+        Agendamento agendamento = buscarPorTokenValido(tokenPuro);
+        if (requisicao == null || requisicao.inicio() == null) {
+            throw new RegraNegocioExcecao("Informe o novo horário para remarcação.");
+        }
+
+        UUID tenantId = agendamento.getTenantId();
+        OffsetDateTime agora = OffsetDateTime.now(relogio);
+        validarAntecedenciaCancelamento(agendamento, tenantId, agora);
+
+        Profissional profissional = profissionalService.buscarAtivoComBloqueio(
+                tenantId, agendamento.getProfissional().getId());
+        ServicoItem servico = profissionalService.buscarServicoParaAgendamento(
+                tenantId, profissional.getId(), agendamento.getServicoItem().getId());
+
+        // Revalida estado do próprio agendamento após adquirir o lock do profissional
+        if (agendamento.getStatus() == StatusAgendamento.CANCELADO
+                || agendamento.getStatus() == StatusAgendamento.CONCLUIDO
+                || !agendamento.getFim().isAfter(agora)) {
+            throw new RecursoNaoEncontradoExcecao(MENSAGEM_TOKEN_INVALIDO_OU_EXPIRADO);
+        }
+
+        OffsetDateTime novoInicio = requisicao.inicio().withOffsetSameInstant(ZoneOffset.UTC);
+        if (!slotService.slotDisponivel(
+                profissional.getId(), novoInicio, tenantId, servico.getId(), agendamento.getId())) {
+            throw new HorarioIndisponivelExcecao();
+        }
+
+        OffsetDateTime inicioAnterior = agendamento.getInicio();
+        OffsetDateTime fimAnterior = agendamento.getFim();
+
+        agendamento.setInicio(novoInicio);
+        agendamento.setFim(novoInicio.plus(Duration.ofMinutes(servico.getDuracaoMinutos())));
+        agendamento.setRemarcado(Boolean.TRUE);
+
+        Agendamento salvo = agendamentoRepository.save(agendamento);
+        publicarEmailRemarcacao(
+                salvo,
+                tenantId,
+                montarLinkAutoatendimento(tokenPuro.trim()),
+                inicioAnterior,
+                fimAnterior);
+
+        return AgendamentoAutoatendimentoResponse.de(salvo, buscarTenantSeguro(tenantId));
+    }
+
     /**
      * Localiza um agendamento ativo (PENDENTE ou CONFIRMADO) cujo token de autoatendimento
      * corresponda ao hash SHA-256 e ainda não tenha expirado (fim > agora).
@@ -175,6 +266,28 @@ public class AgendamentoService {
         }
         DadosEmailAgendamento dados = montarDadosEmail(agendamento, tenantId, linkAutoatendimento);
         MensagemEmail mensagem = templateEmailAgendamento.criarConfirmacao(dados);
+        eventPublisher.publishEvent(new EventoEmailAgendamento(mensagem));
+    }
+
+    private void publicarEmailCancelamento(Agendamento agendamento, UUID tenantId) {
+        if (agendamento.getEmailCliente() == null || agendamento.getEmailCliente().isBlank()) {
+            return;
+        }
+        DadosEmailAgendamento dados = montarDadosEmail(agendamento, tenantId, null);
+        MensagemEmail mensagem = templateEmailAgendamento.criarCancelamento(dados);
+        eventPublisher.publishEvent(new EventoEmailAgendamento(mensagem));
+    }
+
+    private void publicarEmailRemarcacao(Agendamento agendamento,
+                                         UUID tenantId,
+                                         String linkAutoatendimento,
+                                         OffsetDateTime inicioAnterior,
+                                         OffsetDateTime fimAnterior) {
+        if (agendamento.getEmailCliente() == null || agendamento.getEmailCliente().isBlank()) {
+            return;
+        }
+        DadosEmailAgendamento dados = montarDadosEmail(agendamento, tenantId, linkAutoatendimento);
+        MensagemEmail mensagem = templateEmailAgendamento.criarRemarcacao(dados, inicioAnterior, fimAnterior);
         eventPublisher.publishEvent(new EventoEmailAgendamento(mensagem));
     }
 
@@ -224,6 +337,7 @@ public class AgendamentoService {
         if (novoStatus == StatusAgendamento.CANCELADO) {
             // A antecedência mínima vale para o cliente. O admin da clínica cancela sem essa trava.
             agendamento.setCanceladoEm(agora);
+            agendamento.setCanceladoPeloCliente(Boolean.FALSE);
         }
         agendamento.setStatus(novoStatus);
 
@@ -231,14 +345,34 @@ public class AgendamentoService {
     }
 
     /**
-     * Regra do cancelamento feito pelo cliente. O admin usa {@link #atualizarStatus} e não passa por aqui.
+     * Regra de antecedência mínima para cancelamento e remarcação feitos pelo cliente.
+     * O admin usa {@link #atualizarStatus} e não passa por aqui.
      */
     public void validarAntecedenciaCancelamento(Agendamento agendamento, UUID tenantId, OffsetDateTime agora) {
-        int antecedenciaMinutos = tenantService.buscarPorId(tenantId).getAntecedenciaMinimaCancelamentoMinutos();
+        Tenant tenant = tenantService.buscarPorId(tenantId);
+        int antecedenciaMinutos = tenant != null && tenant.getAntecedenciaMinimaCancelamentoMinutos() != null
+                ? tenant.getAntecedenciaMinimaCancelamentoMinutos()
+                : Tenant.ANTECEDENCIA_MINIMA_CANCELAMENTO_PADRAO_MINUTOS;
         OffsetDateTime limite = agendamento.getInicio().minusMinutes(antecedenciaMinutos);
         if (agora.isAfter(limite)) {
+            String contato = montarContatoEstabelecimento(tenant, agendamento);
             throw new RegraNegocioExcecao(
-                    "Cancelamento permitido somente com antecedência mínima de " + antecedenciaMinutos + " minutos.");
+                    "Cancelamento ou remarcação permitidos somente com antecedência mínima de "
+                            + antecedenciaMinutos + " minutos. Entre em contato com " + contato + ".");
         }
+    }
+
+    private static String montarContatoEstabelecimento(Tenant tenant, Agendamento agendamento) {
+        String nomeEstabelecimento = (tenant != null && tenant.getNome() != null && !tenant.getNome().isBlank())
+                ? tenant.getNome()
+                : "o estabelecimento";
+        Profissional prof = agendamento != null ? agendamento.getProfissional() : null;
+        if (prof != null && prof.getTelefone() != null && !prof.getTelefone().isBlank()) {
+            return nomeEstabelecimento + " pelo telefone " + prof.getTelefone();
+        }
+        if (prof != null && prof.getEmail() != null && !prof.getEmail().isBlank()) {
+            return nomeEstabelecimento + " pelo e-mail " + prof.getEmail();
+        }
+        return nomeEstabelecimento;
     }
 }

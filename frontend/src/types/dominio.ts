@@ -43,6 +43,27 @@ export interface AgendamentoResponse {
   inicio: string;
   fim: string;
   status: StatusAgendamento;
+  canceladoPeloCliente?: boolean;
+  remarcado?: boolean;
+}
+
+export interface AgendamentoAutoatendimentoResponse {
+  id: string;
+  profissionalId: string;
+  profissionalNome: string;
+  profissionalEspecialidade: string | null;
+  servicoItemId: string;
+  servicoNome: string;
+  servicoDuracaoMinutos: number;
+  nomeEstabelecimento: string;
+  subdominioEstabelecimento: string | null;
+  nomeCliente: string;
+  emailCliente: string | null;
+  inicio: string;
+  fim: string;
+  status: StatusAgendamento;
+  antecedenciaMinimaCancelamentoMinutos: number;
+  remarcado: boolean;
 }
 
 export interface ErroApiResponse {

@@ -92,11 +92,20 @@ public class AgendamentoController {
         return agendamentoService.consultarPorToken(token);
     }
 
+    @GetMapping("/public/appointments/manage/{token}/slots")
+    public List<OffsetDateTime> listarSlotsAutoatendimento(
+            @PathVariable String token,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            HttpServletRequest request) {
+        limitadorTentativas.verificar(request);
+        return agendamentoService.listarSlotsParaRemarcacao(token, data);
+    }
+
     @PostMapping("/public/appointments/manage/{token}/cancel")
     public AgendamentoAutoatendimentoResponse cancelarPorToken(@PathVariable String token,
                                                                HttpServletRequest request) {
         limitadorTentativas.verificar(request);
-        return agendamentoService.consultarPorToken(token);
+        return agendamentoService.cancelarPorToken(token);
     }
 
     @PostMapping("/public/appointments/manage/{token}/reschedule")
@@ -105,7 +114,7 @@ public class AgendamentoController {
             @RequestBody(required = false) RemarcarAgendamentoRequest requisicao,
             HttpServletRequest request) {
         limitadorTentativas.verificar(request);
-        return agendamentoService.consultarPorToken(token);
+        return agendamentoService.remarcarPorToken(token, requisicao);
     }
 
     @GetMapping("/agendamentos")
