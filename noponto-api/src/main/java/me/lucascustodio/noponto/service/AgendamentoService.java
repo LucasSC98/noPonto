@@ -86,7 +86,7 @@ public class AgendamentoService {
 
         OffsetDateTime agora = OffsetDateTime.now(relogio);
         if (novoStatus == StatusAgendamento.CANCELADO) {
-            validarAntecedenciaCancelamento(agendamento, tenantId, agora);
+            // A antecedência mínima vale para o cliente. O admin da clínica cancela sem essa trava.
             agendamento.setCanceladoEm(agora);
         }
         agendamento.setStatus(novoStatus);
@@ -94,7 +94,10 @@ public class AgendamentoService {
         return AgendamentoResponse.de(agendamentoRepository.save(agendamento));
     }
 
-    private void validarAntecedenciaCancelamento(Agendamento agendamento, UUID tenantId, OffsetDateTime agora) {
+    /**
+     * Regra do cancelamento feito pelo cliente. O admin usa {@link #atualizarStatus} e não passa por aqui.
+     */
+    public void validarAntecedenciaCancelamento(Agendamento agendamento, UUID tenantId, OffsetDateTime agora) {
         int antecedenciaMinutos = tenantService.buscarPorId(tenantId).getAntecedenciaMinimaCancelamentoMinutos();
         OffsetDateTime limite = agendamento.getInicio().minusMinutes(antecedenciaMinutos);
         if (agora.isAfter(limite)) {

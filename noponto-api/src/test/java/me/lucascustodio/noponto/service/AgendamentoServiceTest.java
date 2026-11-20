@@ -137,28 +137,52 @@ class AgendamentoServiceTest {
     }
 
     @Test
-    void deve_cancelarERegistrarData_quando_respeitaAntecedenciaMinima() {
+    void deve_cancelarERegistrarData_quando_adminCancela() {
         Agendamento agendamento = agendamentoComStatus(StatusAgendamento.CONFIRMADO, INICIO);
-        when(tenantService.buscarPorId(TENANT_ID)).thenReturn(tenantComAntecedencia(120));
 
         AgendamentoResponse resposta = agendamentoService.atualizarStatus(
                 agendamento.getId(), StatusAgendamento.CANCELADO, TENANT_ID);
 
         assertThat(resposta.status()).isEqualTo(StatusAgendamento.CANCELADO);
         assertThat(agendamento.getCanceladoEm()).isNotNull();
+        verify(tenantService, never()).buscarPorId(any());
     }
 
     @Test
-    void deve_lancarExcecao_quando_cancelarForaDaAntecedenciaMinima() {
-        // agora = 18/11 12:00Z; agendamento em 18/11 13:00Z (1h) com antecedência mínima de 2h
+    void deve_cancelar_quando_adminCancelaSemAntecedenciaMinima() {
+        // agora = 18/11 12:00Z; agendamento em 18/11 13:00Z, dentro da janela de 120 minutos
+        Agendamento agendamento = agendamentoComStatus(StatusAgendamento.CONFIRMADO,
+                OffsetDateTime.parse("2026-11-18T13:00:00Z"));
+
+        AgendamentoResponse resposta = agendamentoService.atualizarStatus(
+                agendamento.getId(), StatusAgendamento.CANCELADO, TENANT_ID);
+
+        assertThat(resposta.status()).isEqualTo(StatusAgendamento.CANCELADO);
+        assertThat(agendamento.getCanceladoEm()).isEqualTo(OffsetDateTime.parse("2026-11-18T12:00:00Z"));
+        verify(tenantService, never()).buscarPorId(any());
+    }
+
+    @Test
+    void deve_lancarExcecao_quando_clienteCancelaForaDaAntecedenciaMinima() {
         Agendamento agendamento = agendamentoComStatus(StatusAgendamento.CONFIRMADO,
                 OffsetDateTime.parse("2026-11-18T13:00:00Z"));
         when(tenantService.buscarPorId(TENANT_ID)).thenReturn(tenantComAntecedencia(120));
 
-        assertThatThrownBy(() -> agendamentoService.atualizarStatus(
-                agendamento.getId(), StatusAgendamento.CANCELADO, TENANT_ID))
+        assertThatThrownBy(() -> agendamentoService.validarAntecedenciaCancelamento(
+                agendamento, TENANT_ID, OffsetDateTime.parse("2026-11-18T12:00:00Z")))
                 .isInstanceOf(RegraNegocioExcecao.class)
                 .hasMessageContaining("antecedência");
+        assertThat(agendamento.getStatus()).isEqualTo(StatusAgendamento.CONFIRMADO);
+    }
+
+    @Test
+    void deve_aceitar_quando_clienteCancelaDentroDaAntecedenciaMinima() {
+        Agendamento agendamento = agendamentoComStatus(StatusAgendamento.CONFIRMADO, INICIO);
+        when(tenantService.buscarPorId(TENANT_ID)).thenReturn(tenantComAntecedencia(120));
+
+        agendamentoService.validarAntecedenciaCancelamento(
+                agendamento, TENANT_ID, OffsetDateTime.parse("2026-11-18T12:00:00Z"));
+
         assertThat(agendamento.getStatus()).isEqualTo(StatusAgendamento.CONFIRMADO);
     }
 

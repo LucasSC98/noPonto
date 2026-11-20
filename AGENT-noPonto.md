@@ -173,7 +173,7 @@ me.lucascustodio.noponto
 - O agendamento ocupa o intervalo semiaberto `[inicio, fim)`, onde `fim = inicio + duracaoMinutos` do `ServicoItem`.
 - Status possíveis: `PENDENTE`, `CONFIRMADO`, `CANCELADO`, `CONCLUIDO`.
 - Transições permitidas: `PENDENTE → CONFIRMADO | CANCELADO`; `CONFIRMADO → CONCLUIDO | CANCELADO`. Após `CONCLUIDO` ou `CANCELADO`, o agendamento é imutável.
-- Cancelamento só é permitido respeitando a antecedência mínima configurável por tenant (padrão: `120` minutos antes do início).
+- Cancelamento feito pelo **cliente** respeita a antecedência mínima configurável por tenant (padrão: `120` minutos antes do início), via `validarAntecedenciaCancelamento`. O **admin** da clínica, em `atualizarStatus`, cancela sem essa antecedência (profissional doente, por exemplo), mas continua registrando `canceladoEm` e respeitando as transições: após `CONCLUIDO` ou `CANCELADO` o agendamento é imutável.
 
 ### Slots disponíveis (`SlotService`)
 
