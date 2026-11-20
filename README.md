@@ -34,3 +34,16 @@ Não ative o perfil `dev`. Defina pelo menos:
 | `NOPONTO_JWT_EXPIRACAO_MINUTOS` | não | Validade do token. Padrão: 480. |
 
 O `docker-compose.yml` sobe apenas o PostgreSQL local. A API lê essas variáveis do ambiente do processo.
+
+## Rotas públicas
+
+Sem JWT. Qualquer outro `POST` em `/public/**` continua exigindo autenticação. Rotas novas de autoatendimento usam inglês (`/public/appointments/...`); as já existentes permanecem como estão.
+
+| Método | Rota | Uso |
+| --- | --- | --- |
+| `POST` | `/auth/login` | Login da clínica |
+| `GET` | `/public/**` | Leitura da agenda (profissionais, serviços, slots) |
+| `POST` | `/public/agendamentos` | Cliente cria um agendamento |
+| `POST` | `/public/appointments/manage/{token}/cancel` | Cliente cancela pelo token do agendamento |
+| `POST` | `/public/appointments/manage/{token}/reschedule` | Cliente remarca pelo mesmo token |
+| `OPTIONS` | `/**` | Preflight de CORS |

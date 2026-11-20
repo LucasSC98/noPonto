@@ -40,10 +40,19 @@ public class SecurityConfig {
                 .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rotas -> rotas
+                        // Preflight do browser, antes de qualquer JWT.
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Login da clínica. Não há sessão; o token sai na resposta.
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        // Agenda pública: profissionais, serviços e slots. Só leitura.
                         .requestMatchers(HttpMethod.GET, "/public/**").permitAll()
+                        // Cliente cria o agendamento sem conta. Outros POST em /public/** seguem autenticados.
                         .requestMatchers(HttpMethod.POST, "/public/agendamentos").permitAll()
+                        // Cliente cancela pelo token do agendamento, sem JWT de admin.
+                        .requestMatchers(HttpMethod.POST, "/public/appointments/manage/{token}/cancel").permitAll()
+                        // Cliente remarca pelo mesmo token. Não abre POST para o restante de /public/**.
+                        .requestMatchers(HttpMethod.POST, "/public/appointments/manage/{token}/reschedule").permitAll()
+                        // Corpo de erro do Spring. Sem isso, um 401 vira outro 401 no /error.
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(excecoes -> excecoes

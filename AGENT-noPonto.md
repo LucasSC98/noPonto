@@ -150,7 +150,7 @@ me.lucascustodio.noponto
 - `TratadorGlobalExcecoes` (`@RestControllerAdvice`) mapeia `ExcecaoDominio` e `MethodArgumentNotValidException` para `ErroResponse` com mensagens em português.
 - API stateless (`SessionCreationPolicy.STATELESS`, CSRF desabilitado) com `JwtAuthFilter` antes de `UsernamePasswordAuthenticationFilter` (e `FilterRegistrationBean.setEnabled(false)` para não rodar fora da cadeia de segurança).
 - `noponto.jwt.segredo` não tem valor padrão no `application.yml`. Fora dos perfis `dev` e `test`, vem só de `NOPONTO_JWT_SEGREDO`. Segredo ausente ou com menos de 32 bytes impede a subida (`JwtService`).
-- Rotas públicas liberadas sem JWT: `POST /auth/login`, `GET /public/**`, `POST /public/agendamentos`, `OPTIONS /**` e `/error`. Tudo o mais exige JWT válido.
+- Rotas públicas liberadas sem JWT: `POST /auth/login`, `GET /public/**`, `POST /public/agendamentos`, `POST /public/appointments/manage/{token}/cancel`, `POST /public/appointments/manage/{token}/reschedule`, `OPTIONS /**` e `/error`. `POST` não é liberado para todo `/public/**`. Rotas novas de autoatendimento usam o prefixo em inglês `/public/appointments`. Tudo o mais exige JWT válido.
 - CORS configurado em `SecurityConfig` via propriedade `noponto.cors.origem-permitida` (`application.yml`), permitindo preflight `OPTIONS` antes do filtro JWT.
 - Validar sempre o `tenant_id` do JWT contra o recurso acessado antes de qualquer operação.
 
