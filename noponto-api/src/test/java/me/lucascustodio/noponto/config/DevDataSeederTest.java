@@ -1,11 +1,13 @@
 package me.lucascustodio.noponto.config;
 
+import me.lucascustodio.noponto.domain.Bloqueio;
 import me.lucascustodio.noponto.domain.PerfilUsuario;
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.RegraDisponibilidade;
 import me.lucascustodio.noponto.domain.ServicoItem;
 import me.lucascustodio.noponto.domain.Tenant;
 import me.lucascustodio.noponto.domain.Usuario;
+import me.lucascustodio.noponto.repository.BloqueioRepository;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import me.lucascustodio.noponto.repository.RegraDisponibilidadeRepository;
 import me.lucascustodio.noponto.repository.ServicoItemRepository;
@@ -18,6 +20,10 @@ import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +41,7 @@ class DevDataSeederTest {
     private ProfissionalRepository profissionalRepository;
     private ServicoItemRepository servicoItemRepository;
     private RegraDisponibilidadeRepository regraRepository;
+    private BloqueioRepository bloqueioRepository;
     private PasswordEncoder passwordEncoder;
     private DevDataSeeder seeder;
 
@@ -45,14 +52,18 @@ class DevDataSeederTest {
         profissionalRepository = mock(ProfissionalRepository.class);
         servicoItemRepository = mock(ServicoItemRepository.class);
         regraRepository = mock(RegraDisponibilidadeRepository.class);
+        bloqueioRepository = mock(BloqueioRepository.class);
         passwordEncoder = new BCryptPasswordEncoder(4);
+        Clock relogio = Clock.fixed(Instant.parse("2026-11-20T12:00:00Z"), ZoneOffset.UTC);
         seeder = new DevDataSeeder(
                 tenantRepository,
                 usuarioRepository,
                 profissionalRepository,
                 servicoItemRepository,
                 regraRepository,
-                passwordEncoder);
+                bloqueioRepository,
+                passwordEncoder,
+                relogio);
     }
 
     @Test
@@ -62,7 +73,8 @@ class DevDataSeederTest {
         seeder.run(new DefaultApplicationArguments());
 
         verify(tenantRepository).count();
-        verifyNoInteractions(usuarioRepository, profissionalRepository, servicoItemRepository, regraRepository);
+        verifyNoInteractions(usuarioRepository, profissionalRepository, servicoItemRepository,
+                regraRepository, bloqueioRepository);
     }
 
     @Test
@@ -97,5 +109,14 @@ class DevDataSeederTest {
 
         verify(servicoItemRepository, times(2)).save(any(ServicoItem.class));
         verify(regraRepository, times(5)).save(any(RegraDisponibilidade.class));
+
+        ArgumentCaptor<Bloqueio> bloqueioCaptor = ArgumentCaptor.forClass(Bloqueio.class);
+        verify(bloqueioRepository).save(bloqueioCaptor.capture());
+        Bloqueio bloqueio = bloqueioCaptor.getValue();
+        assertThat(bloqueio.getTenantId()).isNotNull();
+        assertThat(bloqueio.getProfissional().getNome()).isEqualTo("Dr. João Silva");
+        assertThat(bloqueio.getMotivo()).isEqualTo("Feriado de Natal");
+        assertThat(bloqueio.getInicio()).isEqualTo(OffsetDateTime.parse("2026-12-25T03:00:00Z"));
+        assertThat(bloqueio.getFim()).isEqualTo(OffsetDateTime.parse("2026-12-26T03:00:00Z"));
     }
 }

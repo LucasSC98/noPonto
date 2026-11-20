@@ -1,12 +1,14 @@
 package me.lucascustodio.noponto.config;
 
 import lombok.extern.slf4j.Slf4j;
+import me.lucascustodio.noponto.domain.Bloqueio;
 import me.lucascustodio.noponto.domain.PerfilUsuario;
 import me.lucascustodio.noponto.domain.Profissional;
 import me.lucascustodio.noponto.domain.RegraDisponibilidade;
 import me.lucascustodio.noponto.domain.ServicoItem;
 import me.lucascustodio.noponto.domain.Tenant;
 import me.lucascustodio.noponto.domain.Usuario;
+import me.lucascustodio.noponto.repository.BloqueioRepository;
 import me.lucascustodio.noponto.repository.ProfissionalRepository;
 import me.lucascustodio.noponto.repository.RegraDisponibilidadeRepository;
 import me.lucascustodio.noponto.repository.ServicoItemRepository;
@@ -19,7 +21,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -41,20 +48,26 @@ public class DevDataSeeder implements ApplicationRunner {
     private final ProfissionalRepository profissionalRepository;
     private final ServicoItemRepository servicoItemRepository;
     private final RegraDisponibilidadeRepository regraDisponibilidadeRepository;
+    private final BloqueioRepository bloqueioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Clock relogio;
 
     public DevDataSeeder(TenantRepository tenantRepository,
                          UsuarioRepository usuarioRepository,
                          ProfissionalRepository profissionalRepository,
                          ServicoItemRepository servicoItemRepository,
                          RegraDisponibilidadeRepository regraDisponibilidadeRepository,
-                         PasswordEncoder passwordEncoder) {
+                         BloqueioRepository bloqueioRepository,
+                         PasswordEncoder passwordEncoder,
+                         Clock relogio) {
         this.tenantRepository = tenantRepository;
         this.usuarioRepository = usuarioRepository;
         this.profissionalRepository = profissionalRepository;
         this.servicoItemRepository = servicoItemRepository;
         this.regraDisponibilidadeRepository = regraDisponibilidadeRepository;
+        this.bloqueioRepository = bloqueioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.relogio = relogio;
     }
 
     @Override
@@ -102,6 +115,22 @@ public class DevDataSeeder implements ApplicationRunner {
             regra.setAtivo(Boolean.TRUE);
             regraDisponibilidadeRepository.save(regra);
         }
+
+        ZoneOffset fusoEstabelecimento = ZoneOffset.ofHours(-3);
+        LocalDate hoje = LocalDate.now(relogio.withZone(fusoEstabelecimento));
+        LocalDate feriado = LocalDate.of(hoje.getYear(), Month.DECEMBER, 25);
+        if (!feriado.isAfter(hoje)) {
+            feriado = feriado.plusYears(1);
+        }
+        Bloqueio bloqueioExemplo = new Bloqueio();
+        bloqueioExemplo.setTenantId(tenant.getId());
+        bloqueioExemplo.setProfissional(profissional);
+        bloqueioExemplo.setInicio(OffsetDateTime.of(feriado, LocalTime.MIDNIGHT, fusoEstabelecimento)
+                .withOffsetSameInstant(ZoneOffset.UTC));
+        bloqueioExemplo.setFim(OffsetDateTime.of(feriado.plusDays(1), LocalTime.MIDNIGHT, fusoEstabelecimento)
+                .withOffsetSameInstant(ZoneOffset.UTC));
+        bloqueioExemplo.setMotivo("Feriado de Natal");
+        bloqueioRepository.save(bloqueioExemplo);
 
         log.info("✅ Seed concluído: tenant clinica-teste, admin@teste.com / 123456");
         log.info("Dados dev criados -> profissionalId={}, consultaGeralId={}, retornoId={}",
