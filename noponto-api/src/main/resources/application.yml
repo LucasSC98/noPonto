@@ -23,10 +23,28 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+  mail:
+    host: ${NOPONTO_MAIL_HOST:localhost}
+    port: ${NOPONTO_MAIL_PORT:1025}
+    username: ${NOPONTO_MAIL_USERNAME:}
+    password: ${NOPONTO_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${NOPONTO_MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${NOPONTO_MAIL_SMTP_STARTTLS:false}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 noponto:
   cors:
     origem-permitida: ${NOPONTO_CORS_ORIGEM_PERMITIDA:http://localhost:5173}
+  frontend:
+    url-base: ${NOPONTO_FRONTEND_URL:http://localhost:5173}
+  email:
+    remetente: ${NOPONTO_MAIL_REMETENTE:nao-responda@noponto.local}
   tenant:
     # Rotas públicas resolvem o tenant pelo subdomínio: <tenant>.<dominio-base>
     dominio-base: ${NOPONTO_DOMINIO_BASE:noponto.com}
